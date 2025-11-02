@@ -18,7 +18,7 @@ client = anthropic.Anthropic(
 tools = [
     {
         "name": "udayan_greet_and_introduce_growthx",
-        "description": "Get structured information about a person",
+        "description": "Udayan greets the user and introduces GrowthX, including what we do, who should join, and why they should join. in a structured format.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -104,13 +104,13 @@ print("\n" + "=" * 50)
 print("SAVING STRUCTURED DATA TO JSON FILE...")
 print("=" * 50)
 
-with open("step_5_structured_response.json", "w") as json_file:
+with open("step_4_structured_response.json", "w") as json_file:
     # Save just the structured data, not the whole response
     for content in message.content:
         if content.type == "tool_use":
             json.dump(content.input, json_file, indent=2)
 
-print("Structured data saved to 'step_5_structured_response.json'")
+print("Structured data saved to 'step_4_structured_response.json'")
 print("=" * 50)
 
 # Note for learners:

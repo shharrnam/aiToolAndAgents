@@ -1,8 +1,6 @@
-# Here we are a little advanced, solving a real business problem using an AI script / agent tool whatever you want to call it!
-# The problem is that leetcode business team wants to start doing online assesment for multiple new skills, and they have told a product manager to conduct a research, which skills can be assesed through their current online assesment platform and which skills cant be assesed through their current online assesment platform.
-# Now the product manager can reach out to industry experts for each skill, but that will take a lot of time and effort
-# Or the product manager can research the web skill by skill understand about it how interviews are conducted, and spend his entire quarter doing this research, and still not be sure about it
-# Or they can be smart and use AI here to do the research
+# this the same step 6 but the product manager wants to ensure that the data is backed with realreasearch to align stakeholders
+# so they decide to provide a new tool to the script/agent whatever you want to call it, a way to research the web
+# luckily claude provides inbuilt tools to do that.
 import os
 from dotenv import load_dotenv
 import anthropic
@@ -22,13 +20,21 @@ ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
 MODEL = "claude-sonnet-4-5-20250929"  # Using latest available model version
 
 # File paths
-INPUT_CSV = "step_6_input_data/inputdatesmall.csv"
-OUTPUT_CSV = f"step_6_output_data/step_6_output_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+INPUT_CSV = "step_6_input_data/inputdatasmall.csv"
+OUTPUT_CSV = f"step_6_output_data/step_6_output_data_with_citations_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
 
 # System prompt template
 SYSTEM_PROMPT = """You are an expert AI agent specialized in analyzing skills and determining appropriate technical assessment methods.
 
 Your primary goal is to determine if a discipline and its micro skill require a technical assessment, and if that assessment is possible in our current setup.
+
+IMPORTANT: You MUST use web search to research industry-standard assessment practices for each skill. Search for:
+- How the specific skill is assessed in industry interviews
+- Standard technical assessment methods for this skill
+- Infrastructure requirements for assessing this skill
+- Best practices for evaluating proficiency in this skill
+
+Always base your analysis on real research and provide citations for your findings.
 
 Current available information about our system:
     - Frontend:
@@ -144,6 +150,10 @@ class SkillAssessmentAgent:
                     "system_requirements_needed": {
                         "type": "string",
                         "description": "Details of infrastructure needed to assess this skill"
+                    },
+                    "citations": {
+                        "type": "string",
+                        "description": "Comma-separated URLs of sources used for the analysis"
                     }
                 },
                 "required": [
@@ -154,8 +164,8 @@ class SkillAssessmentAgent:
                     "can_assess_in_current_setup",
                     "technical_assessments_required",
                     "reason_cannot_assess",
-                    "system_requirements_needed"
-
+                    "system_requirements_needed",
+                    "citations"
                 ]
             }
         }
@@ -171,9 +181,14 @@ class SkillAssessmentAgent:
             micro_skill=micro_skill
         )
 
-        # Define tools (only the return_analysis_result tool)
+        # Define tools (return_analysis_result tool + web search tool)
         tools = [
-            self.create_return_analysis_tool()
+            self.create_return_analysis_tool(),
+            {
+                "type": "web_search_20250305",
+                "name": "web_search",
+                "max_uses": 5  # Allow up to 5 searches per skill analysis
+            }
         ]
 
         try:
@@ -181,7 +196,7 @@ class SkillAssessmentAgent:
             messages = [
                 {
                     "role": "user",
-                    "content": f"Please analyze the skill '{micro_skill}' under '{mega_skill}' in '{discipline}' discipline. Use your knowledge of industry standards to determine assessment requirements."
+                    "content": f"Please analyze the skill '{micro_skill}' under '{mega_skill}' in '{discipline}' discipline. Use web search to research industry standards and assessment practices for this specific skill. Provide citations for all sources used in your analysis. Then use the return_analysis_result tool to provide your findings."
                 }
             ]
 
@@ -209,7 +224,7 @@ class SkillAssessmentAgent:
                 # Prompt for final analysis
                 messages.append({
                     "role": "user",
-                    "content": "Please provide your final analysis using the return_analysis_result tool."
+                    "content": "Please provide your final analysis using the return_analysis_result tool. Make sure to include all the URLs from your web searches in the citations field as a comma-separated list."
                 })
 
                 # Make another call
@@ -255,7 +270,8 @@ class SkillAssessmentAgent:
             "can_assess_in_current_setup": "error",
             "technical_assessments_required": [],
             "reason_cannot_assess": f"Error: {error}",
-            "system_requirements_needed": "Error occurred during analysis"
+            "system_requirements_needed": "Error occurred during analysis",
+            "citations": ""  # Empty citations for error cases
         }
 
     def save_result_to_csv(self, result: Dict, filename: str):
@@ -278,7 +294,8 @@ class SkillAssessmentAgent:
             'technical_assessments_required': tech_assessments_str,
             'reason_cannot_assess': result.get('reason_cannot_assess', ''),
             'system_requirements_needed': result.get('system_requirements_needed', ''),
-            'timestamp': datetime.now().isoformat()
+            'timestamp': datetime.now().isoformat(),
+            'citations': result.get('citations', '')  # Add citations column
         }
 
         # Check if file exists to determine if we need headers

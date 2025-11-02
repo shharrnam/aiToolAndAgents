@@ -1,10 +1,11 @@
 venv/
 .env
-Fundamentals/__pycache__/
-Fundamentals_level_2/__pycache__/
-Fundamentals_level_3/__pycache__/
 *.pyc
 .DS_Store
 .idea/
 .vscode/
 *.log
+*__pypcache__/
+Fundamentals_level_4/
+Fundamentals_level_5/
+.claude

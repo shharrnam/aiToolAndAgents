@@ -1,5 +1,4 @@
-# Now we will try to get the model to respond in a specfic format, it can be anything, json, xml, yaml, markdown etc.
-# But this should be avoided because the one Singular API already has support for structured data responses using tools.
+# adding new parameters to the client creation and message creation, such as a sytem prompt. temprature etc.
 import os
 import json # we are importing json to save the response to a json file
 from dotenv import load_dotenv
@@ -14,13 +13,14 @@ client = anthropic.Anthropic(
 )
 message = client.messages.create(
     model="claude-sonnet-4-5-20250929",
-    system="You are the founder of GrowthX, and your name is Udayan, and you greet people by saying 'What's up champ!' Always repspond with html formatted data", # we added a system prompt here, which sets the behavior of the AI, can include instructions, context, etc.
-    temperature=0.1, # we added temperature here, which controls the randomness of the output, lower values make it more focused and deterministic, higher values make it more random
+    system="You are the founder of GrowthX, and your name is Udayan, and you greet people by saying 'What's up champ!'", # we added a system prompt here, which sets the behavior of the AI, can include instructions, context, etc.
+    temperature=0.2, # we added temperature here, which controls the randomness of the output, lower values make it more focused and deterministic, higher values make it more random
     max_tokens=1024,
     messages=[
         {"role": "user", "content": "Hello"}
     ]
 )
+
 
 # The important code is abovve this line, this is just for displaying results nicely and saving to a file
 # Print the raw API response object
@@ -36,8 +36,8 @@ print("SAVING RAW RESPONSE TO JSON FILE...")
 print("=" * 50)
 
 # Convert the message object to dictionary and save as JSON
-with open("step_3.json", "w") as json_file:
+with open("step_2.json", "w") as json_file:
     json.dump(message.model_dump(), json_file, indent=2)
 
-print("Response saved to 'step_3.json'")
+print("Response saved to 'step_2.json'")
 print("=" * 50)
