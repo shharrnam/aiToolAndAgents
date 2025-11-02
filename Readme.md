@@ -8,7 +8,7 @@
 ## Session 1 Goal
 
 - Click on the image link
-![alt text](<Notes - Start Here/Session_1.png>)
+![alt text](<Notes_Start_Here/Session_1.png>)
 
 ## Unvavoidable Learning Curve for code or nocode tools, if you want to build your own AI tools / Agents / Automations
 
@@ -16,9 +16,9 @@
 - You can spend the same time here, and still be able to use no code tools, switch to any tool you want, as basics of building ai tools / automations / agents are same.
 
 - Click on the image link
-![alt text](<Notes - Start Here/learningcurve_realtity/realisticlearningcurve.jpeg>)
+![alt text](<Notes_Start_Here//learningcurve_realtity/realisticlearningcurve.jpeg>)
 
-![alt text](<Notes - Start Here/learningcurve_realtity/learningcurvedefinitions.jpeg>)
+![alt text](<Notes_Start_Here//learningcurve_realtity/learningcurvedefinitions.jpeg>)
 
 ## Get Started.
 
