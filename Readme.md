@@ -1,4 +1,4 @@
-# A Practical Guide to Building AI Tools & Agents
+# A Practical Guide to Building AI Tools & Agents ( For Non Developers )
 
 - This is a readme file, its a doc / notion file for developers, its the same thing
 - Why is everything shared here, you need to download this repo to pratice / learn whatever was taught in this session.
