@@ -112,11 +112,11 @@ def generate_blog():
                             else:
                                 # Send completion event
                                 result = result_container['result']
-                                yield f"data: {json.dumps({'event': 'complete', 'data': result})}\\n\\n"
+                                yield f"data: {json.dumps({'event': 'complete', 'data': result})}\n\n"
                             break
                         else:
                             # Stream progress event to client
-                            yield f"data: {json.dumps(event)}\\n\\n"
+                            yield f"data: {json.dumps(event)}\n\n"
 
                     except queue.Empty:
                         # Send keepalive to prevent timeout
@@ -134,7 +134,7 @@ def generate_blog():
                             break
 
             except Exception as e:
-                yield f"data: {json.dumps({'event': 'error', 'data': {'message': str(e)}})}\\n\\n"
+                yield f"data: {json.dumps({'event': 'error', 'data': {'message': str(e)}})}\n\n"
 
         # Return Server-Sent Events stream
         return Response(
@@ -210,6 +210,36 @@ def update_brand_context():
         })
     except Exception as e:
         print(f"Error updating brand context: {str(e)}", file=sys.stderr)
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/download/<filename>')
+def download_blog(filename):
+    """Download a generated blog markdown file"""
+    try:
+        from flask import send_file
+        import mimetypes
+
+        # Ensure filename ends with .md for security
+        if not filename.endswith('.md'):
+            return jsonify({'error': 'Invalid file type'}), 400
+
+        file_path = Config.BLOGS_DIR / filename
+
+        if not file_path.exists():
+            return jsonify({'error': 'File not found'}), 404
+
+        # Set proper MIME type for markdown
+        mimetype = 'text/markdown'
+
+        return send_file(
+            file_path,
+            mimetype=mimetype,
+            as_attachment=True,
+            download_name=filename
+        )
+    except Exception as e:
+        print(f"Error downloading file: {str(e)}", file=sys.stderr)
         return jsonify({'error': str(e)}), 500
 
 

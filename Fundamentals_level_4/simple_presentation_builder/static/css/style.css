@@ -186,3 +186,63 @@ button:active:not(:disabled) {
     outline: 2px solid #6366f1;
     outline-offset: 2px;
 }
+
+/*
+ * MARKDOWN CONTENT STYLES
+ * Styles for AI assistant messages with markdown formatting
+ */
+.markdown-content {
+    /* Remove default whitespace-pre-wrap since we're formatting with HTML */
+    white-space: normal;
+    line-height: 1.6;
+}
+
+/* Paragraphs in markdown content */
+.markdown-content p {
+    margin-bottom: 1em;
+}
+
+.markdown-content p:last-child {
+    margin-bottom: 0;
+}
+
+/* Strong/bold text in markdown */
+.markdown-content strong {
+    font-weight: 600;
+    color: #111827;
+}
+
+/* Ordered lists in markdown */
+.markdown-content ol {
+    list-style-type: decimal;
+    margin-left: 1.5em;
+    margin-bottom: 1em;
+    margin-top: 0.5em;
+}
+
+/* Unordered lists in markdown */
+.markdown-content ul {
+    list-style-type: disc;
+    margin-left: 1.5em;
+    margin-bottom: 1em;
+    margin-top: 0.5em;
+}
+
+/* List items spacing */
+.markdown-content li {
+    margin-bottom: 0.5em;
+    line-height: 1.6;
+}
+
+.markdown-content li:last-child {
+    margin-bottom: 0;
+}
+
+/* Nested lists */
+.markdown-content ol ol,
+.markdown-content ul ul,
+.markdown-content ol ul,
+.markdown-content ul ol {
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+}

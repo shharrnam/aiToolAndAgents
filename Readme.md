@@ -429,3 +429,6 @@ Remember: The best way to learn is by doing. Start with step_1 and work your way
 
 
 ## Session 2 TBD.
+
+
+Feedback Link: https://growthx.club/events/690d38c2c2df6fe0a0e32c64?feedback=true

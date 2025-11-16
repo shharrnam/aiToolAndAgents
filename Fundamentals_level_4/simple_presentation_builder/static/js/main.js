@@ -111,10 +111,22 @@ function addMessage(role, content, imageCount = 0) {
             </div>`;
     }
 
+    // Process content based on role
+    // User messages: escape HTML to prevent XSS
+    // Assistant messages: parse markdown for formatted display
+    const processedContent = role === 'user'
+        ? escapeHtml(content)
+        : parseMarkdown(content);
+
+    // Add markdown-content class for assistant messages to style lists and paragraphs
+    const contentClass = role === 'user'
+        ? `${textColor} whitespace-pre-wrap`
+        : `${textColor} markdown-content`;
+
     messageDiv.innerHTML = `
         <div class="max-w-3xl px-4 py-3 rounded-2xl ${bgColor} shadow-sm">
             ${imageIndicator}
-            <div class="${textColor} whitespace-pre-wrap">${escapeHtml(content)}</div>
+            <div class="${contentClass}">${processedContent}</div>
         </div>
     `;
 
@@ -466,6 +478,105 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+/**
+ * Parse markdown text to HTML
+ * Supports bold text, line breaks, numbered lists, and basic formatting
+ * This is a simple implementation for educational purposes
+ * @param {string} text - Markdown text to parse
+ * @returns {string} HTML string
+ */
+function parseMarkdown(text) {
+    // First escape HTML to prevent XSS
+    let html = escapeHtml(text);
+
+    // Convert bold text **text** to <strong>text</strong>
+    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+    // Convert line breaks - preserve double line breaks as paragraphs
+    const lines = html.split('\n');
+    let result = [];
+    let currentParagraph = [];
+    let inList = false;
+    let listType = null; // 'ol' for ordered, 'ul' for unordered
+
+    for (let line of lines) {
+        const trimmedLine = line.trim();
+
+        // Check if line is a numbered list item (e.g., "1. Item")
+        const numberedMatch = trimmedLine.match(/^(\d+)\.\s+(.*)$/);
+        // Check if line is a bullet list item (e.g., "- Item" or "* Item")
+        const bulletMatch = trimmedLine.match(/^[-*]\s+(.*)$/);
+
+        if (numberedMatch) {
+            // Handle numbered list item
+            if (currentParagraph.length > 0) {
+                result.push('<p>' + currentParagraph.join('<br>') + '</p>');
+                currentParagraph = [];
+            }
+
+            if (!inList || listType !== 'ol') {
+                if (inList) {
+                    // Close previous list
+                    result.push(`</${listType}>`);
+                }
+                result.push('<ol>');
+                listType = 'ol';
+                inList = true;
+            }
+
+            result.push(`<li>${numberedMatch[2]}</li>`);
+        } else if (bulletMatch) {
+            // Handle bullet list item
+            if (currentParagraph.length > 0) {
+                result.push('<p>' + currentParagraph.join('<br>') + '</p>');
+                currentParagraph = [];
+            }
+
+            if (!inList || listType !== 'ul') {
+                if (inList) {
+                    // Close previous list
+                    result.push(`</${listType}>`);
+                }
+                result.push('<ul>');
+                listType = 'ul';
+                inList = true;
+            }
+
+            result.push(`<li>${bulletMatch[1]}</li>`);
+        } else {
+            // Not a list item
+            if (inList) {
+                result.push(`</${listType}>`);
+                inList = false;
+                listType = null;
+            }
+
+            if (trimmedLine === '') {
+                // Empty line - end current paragraph
+                if (currentParagraph.length > 0) {
+                    result.push('<p>' + currentParagraph.join('<br>') + '</p>');
+                    currentParagraph = [];
+                }
+            } else {
+                // Regular text line
+                currentParagraph.push(trimmedLine);
+            }
+        }
+    }
+
+    // Close any open list
+    if (inList) {
+        result.push(`</${listType}>`);
+    }
+
+    // Add any remaining paragraph
+    if (currentParagraph.length > 0) {
+        result.push('<p>' + currentParagraph.join('<br>') + '</p>');
+    }
+
+    return result.join('\n');
 }
 
 /**

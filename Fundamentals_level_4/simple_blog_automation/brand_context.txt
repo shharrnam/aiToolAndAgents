@@ -2,7 +2,7 @@
 
 ReplyDaddy helps businesses discover and engage with Reddit opportunities using AI-powered content analysis while maintaining authentic, human-controlled interactions.
 
-✨ What Makes ReplyDaddy Different
+✨ What Makes ReplyDaddy Difference
 ────────────────────────────────────────
 • 🔍 Smart Discovery: AI continuously scans Reddit to find relevant conversations about your brand, competitors, and industry problems
 • 💬 AI-Assisted Content: Generate thoughtful, context-aware responses that add genuine value to discussions

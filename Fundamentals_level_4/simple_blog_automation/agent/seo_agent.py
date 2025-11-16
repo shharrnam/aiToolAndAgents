@@ -352,10 +352,13 @@ Your content HTML must follow this exact structure:
                         # Track if blog was inserted
                         if tool_name == "blog_inserter" and result.get("status") == "success":
                             blog_published = True
+                            # Extract slug from URL to find markdown file
+                            blog_url = result.get("url", "")
+                            slug = blog_url.split("/")[-1] if blog_url else ""
                             self.send_progress("complete", {
                                 "message": "Blog published successfully!",
-                                "blog_url": result.get("blog_url"),
-                                "slug": result.get("slug")
+                                "blog_url": blog_url,
+                                "markdown_file": f"{slug}.md" if slug else None
                             })
 
                         tool_results.append({
@@ -379,14 +382,12 @@ Your content HTML must follow this exact structure:
             if blog_published:
                 return {
                     "status": "success",
-                    "message": "Blog generated and published successfully",
-                    "messages": self.messages
+                    "message": "Blog generated and published successfully"
                 }
             else:
                 return {
                     "status": "warning",
-                    "message": "Blog generation completed but not published to database",
-                    "messages": self.messages
+                    "message": "Blog generation completed but not published to database"
                 }
 
         except Exception as e:

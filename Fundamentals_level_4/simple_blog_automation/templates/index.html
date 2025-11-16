@@ -124,9 +124,10 @@
     .result-section {
         display: none;
         margin-top: 30px;
-        padding: 20px;
+        padding: 30px;
         background: #fff;
         border: 2px solid #000;
+        text-align: center;
     }
 
     .result-section h3 {
@@ -137,16 +138,28 @@
         letter-spacing: 1px;
     }
 
-    .result-link {
-        display: inline-block;
-        margin-top: 10px;
-        color: #000;
+    .result-actions {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        align-items: center;
+        margin-top: 20px;
+    }
+
+    .result-actions .btn {
         text-decoration: none;
-        font-weight: 500;
-        border-bottom: 1px solid #000;
-        text-transform: uppercase;
-        font-size: 12px;
-        letter-spacing: 1px;
+        display: inline-block;
+    }
+
+    .btn-secondary {
+        background: #fff;
+        color: #000;
+        border: 2px solid #000;
+    }
+
+    .btn-secondary:hover {
+        background: #f0f0f0;
+        color: #000;
     }
 
     .status-indicator {
@@ -321,13 +334,17 @@
 <div class="result-section" id="resultSection">
     <h3>BLOG GENERATED SUCCESSFULLY</h3>
     <p id="resultMessage"></p>
-    <a href="#" target="_blank" id="resultLink" class="result-link">VIEW PUBLISHED BLOG</a>
+    <div class="result-actions">
+        <a href="#" target="_blank" id="previewBtn" class="btn">PREVIEW BLOG</a>
+        <a href="#" download id="downloadBtn" class="btn btn-secondary">DOWNLOAD MARKDOWN</a>
+    </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
 let eventSource = null;
+let resultShown = false;
 
 function addLog(message, type = 'info') {
     const logContainer = document.getElementById('logContainer');
@@ -408,20 +425,52 @@ function handleSSEMessage(data) {
                 updateStatus('Blog generated successfully!');
                 addLog('Blog successfully created and published!', 'success');
 
-                // Show result section
-                document.getElementById('resultSection').style.display = 'block';
+                // Debug log to see what data we're receiving
+                console.log('Complete event data:', data.data);
 
-                // Update result details
-                if (data.data.blog_url) {
+                // Hide spinner first
+                document.getElementById('spinner').style.display = 'none';
+
+                // Only show result if it has blog_url (first complete event)
+                // or if no result has been shown yet
+                if (data.data && data.data.blog_url && !resultShown) {
+                    resultShown = true;
+
+                    // Show result section explicitly
+                    const resultSection = document.getElementById('resultSection');
+                    resultSection.style.display = 'block';
+                    resultSection.scrollIntoView({ behavior: 'smooth' });
+
                     document.getElementById('resultMessage').textContent =
                         `Your blog has been published successfully!`;
-                    document.getElementById('resultLink').href = data.data.blog_url;
-                    document.getElementById('resultLink').style.display = 'inline-block';
+
+                    // Set preview button
+                    const previewBtn = document.getElementById('previewBtn');
+                    previewBtn.href = data.data.blog_url;
+                    previewBtn.style.display = 'inline-block';
+
+                    // Set download button
+                    const downloadBtn = document.getElementById('downloadBtn');
+                    if (data.data.markdown_file) {
+                        downloadBtn.href = `/api/download/${data.data.markdown_file}`;
+                    } else {
+                        // Extract slug from URL for download
+                        const urlParts = data.data.blog_url.split('/');
+                        const slug = urlParts[urlParts.length - 1];
+                        downloadBtn.href = `/api/download/${slug}.md`;
+                    }
+                    downloadBtn.style.display = 'inline-block';
+
                     addLog(`Blog URL: ${data.data.blog_url}`, 'success');
-                } else {
+                } else if (!resultShown && !data.data.blog_url) {
+                    // Only show local save message if no result shown yet
+                    const resultSection = document.getElementById('resultSection');
+                    resultSection.style.display = 'block';
+
                     document.getElementById('resultMessage').textContent =
                         'Blog has been created and saved locally.';
-                    document.getElementById('resultLink').style.display = 'none';
+                    document.getElementById('previewBtn').style.display = 'none';
+                    document.getElementById('downloadBtn').style.display = 'none';
                 }
 
                 // Hide spinner
@@ -441,6 +490,9 @@ function handleSSEMessage(data) {
 function generateBlog() {
     const topic = document.getElementById('topic').value.trim();
     const generateBtn = document.getElementById('generateBtn');
+
+    // Reset result shown flag
+    resultShown = false;
 
     // Disable button and show progress
     generateBtn.disabled = true;
