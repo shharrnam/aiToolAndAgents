@@ -72,13 +72,13 @@ This course is structured in five progressive levels:
 
 **Windows (Command Prompt or PowerShell):**
 ```bash
-git clone https://github.com/TeacherOp/grwothx_1
+git clone https://github.com/TeacherOp/growthx_1
 cd Learnai
 ```
 
 **macOS/Linux:**
 ```bash
-git clone https://github.com/TeacherOp/grwothx_1
+git clone https://github.com/TeacherOp/growthx_1
 cd Learnai
 ```
 
