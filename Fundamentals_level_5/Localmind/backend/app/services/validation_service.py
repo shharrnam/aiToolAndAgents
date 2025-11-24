@@ -7,7 +7,8 @@ the single responsibility principle.
 """
 from typing import Tuple, Dict, Optional
 import anthropic
-from openai import OpenAI
+import openai
+import requests
 from google import genai
 from google.genai import types
 from tavily import TavilyClient
@@ -76,12 +77,56 @@ class ValidationService:
             print(f"Anthropic validation error: {type(e).__name__}: {str(e)}")
             return False, f"Validation failed: {str(e)}"
 
+    def validate_elevenlabs_key(self, api_key: str) -> Tuple[bool, str]:
+        """
+        Validate an ElevenLabs API key by checking user info.
+
+        Educational Note: We use the /user endpoint which returns
+        user subscription info - a lightweight way to verify the key.
+
+        Args:
+            api_key: The API key to validate
+
+        Returns:
+            Tuple of (is_valid, message)
+        """
+        if not api_key or api_key == '':
+            return False, "API key is empty"
+
+        try:
+            # Check user info endpoint - lightweight validation
+            response = requests.get(
+                "https://api.elevenlabs.io/v1/user",
+                headers={"xi-api-key": api_key},
+                timeout=10
+            )
+
+            if response.status_code == 200:
+                user_data = response.json()
+                # Extract subscription tier for more informative message
+                subscription = user_data.get('subscription', {})
+                tier = subscription.get('tier', 'unknown')
+                return True, f"Valid ElevenLabs API key (tier: {tier})"
+            elif response.status_code == 401:
+                return False, "Invalid API key - authentication failed"
+            elif response.status_code == 429:
+                return True, "Valid API key (rate limited)"
+            else:
+                return False, f"Validation failed: HTTP {response.status_code}"
+
+        except requests.exceptions.Timeout:
+            return False, "Validation timed out - try again"
+        except requests.exceptions.RequestException as e:
+            print(f"ElevenLabs validation error: {type(e).__name__}: {str(e)}")
+            return False, f"Validation failed: {str(e)}"
+
     def validate_openai_key(self, api_key: str) -> Tuple[bool, str]:
         """
-        Validate an OpenAI API key by making a test request.
+        Validate an OpenAI API key by making a test embeddings request.
 
-        Educational Note: We use the models.list() endpoint which is
-        the cheapest way to verify an API key works.
+        Educational Note: We use the embeddings endpoint since that's what
+        we'll use this key for (text-embedding-3-small model for RAG).
+        This is a lightweight way to verify the key works.
 
         Args:
             api_key: The API key to validate
@@ -94,36 +139,36 @@ class ValidationService:
 
         try:
             # Create client with the provided key
-            client = OpenAI(api_key=api_key)
+            client = openai.OpenAI(api_key=api_key)
 
-            # List models is the cheapest way to verify the key
-            # This doesn't consume any tokens
-            models = client.models.list()
+            # Make a minimal embeddings request to test the key
+            # Using text-embedding-3-small which is cost-effective
+            response = client.embeddings.create(
+                model="text-embedding-3-small",
+                input="test",
+                encoding_format="float"
+            )
 
-            # Try to iterate at least one model to ensure the response is valid
-            first_model = next(iter(models), None)
-
-            if first_model:
+            # If we get here with data, the key is valid
+            if response.data and len(response.data) > 0:
                 return True, "Valid OpenAI API key"
             else:
-                return True, "Valid OpenAI API key (no models available)"
+                return False, "API returned empty response"
 
+        except openai.AuthenticationError as e:
+            return False, "Invalid API key - authentication failed"
+        except openai.PermissionDeniedError as e:
+            return False, "API key lacks required permissions"
+        except openai.RateLimitError as e:
+            # Rate limit actually means the key is valid but rate limited
+            return True, "Valid API key (rate limited)"
+        except openai.InsufficientQuotaError as e:
+            # Insufficient quota means the key is valid but has no credits
+            return True, "Valid API key (insufficient quota)"
         except Exception as e:
-            # OpenAI SDK uses different exception types
-            error_message = str(e).lower()
-
-            if 'invalid' in error_message or 'incorrect' in error_message:
-                return False, "Invalid API key"
-            elif 'rate' in error_message:
-                # Rate limit means the key is valid
-                return True, "Valid API key (rate limited)"
-            elif 'insufficient' in error_message or 'quota' in error_message:
-                # Quota issues mean the key is valid
-                return True, "Valid API key (quota exceeded)"
-            else:
-                # Log the actual error for debugging
-                print(f"OpenAI validation error: {type(e).__name__}: {str(e)}")
-                return False, f"Validation failed: {str(e)}"
+            # Log the actual error for debugging
+            print(f"OpenAI validation error: {type(e).__name__}: {str(e)}")
+            return False, f"Validation failed: {str(e)}"
 
     def validate_gemini_2_5_key(self, api_key: str) -> Tuple[bool, str]:
         """

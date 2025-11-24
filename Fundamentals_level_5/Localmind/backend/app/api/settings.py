@@ -25,8 +25,9 @@ def get_api_keys():
     try:
         # Define the API keys we manage
         api_keys_config = [
-            {'id': 'ANTHROPIC_API_KEY', 'name': 'Anthropic API', 'description': 'Claude AI models', 'category': 'ai', 'required': True},
-            {'id': 'OPENAI_API_KEY', 'name': 'OpenAI API', 'description': 'GPT models and embeddings', 'category': 'ai', 'required': True},
+            {'id': 'ANTHROPIC_API_KEY', 'name': 'Anthropic API', 'description': 'Claude AI models for chat', 'category': 'ai', 'required': True},
+            {'id': 'ELEVENLABS_API_KEY', 'name': 'ElevenLabs API', 'description': 'Real-time speech-to-text transcription', 'category': 'ai', 'required': True},
+            {'id': 'OPENAI_API_KEY', 'name': 'OpenAI API', 'description': 'OpenAI models for embeddings (text-embedding-3-small)', 'category': 'ai'},
             {'id': 'GEMINI_2_5_API_KEY', 'name': 'Gemini 2.5', 'description': 'Google Gemini 2.5 text generation (may share key with other Google services)', 'category': 'ai'},
             {'id': 'NANO_BANANA_API_KEY', 'name': 'Nano Banana', 'description': 'Gemini 3 Pro Image generation (may share key with other Google services)', 'category': 'ai'},
             {'id': 'VEO_API_KEY', 'name': 'VEO', 'description': 'Google VEO 2.0 video generation (may share key with other Google services)', 'category': 'ai'},
@@ -218,8 +219,11 @@ def validate_api_key():
         if key_id == 'ANTHROPIC_API_KEY':
             # Test Anthropic API
             is_valid, message = validation_service.validate_anthropic_key(value)
+        elif key_id == 'ELEVENLABS_API_KEY':
+            # Test ElevenLabs API
+            is_valid, message = validation_service.validate_elevenlabs_key(value)
         elif key_id == 'OPENAI_API_KEY':
-            # Test OpenAI API
+            # Test OpenAI API (for embeddings)
             is_valid, message = validation_service.validate_openai_key(value)
         elif key_id == 'GEMINI_2_5_API_KEY':
             # Test Gemini 2.5 text generation

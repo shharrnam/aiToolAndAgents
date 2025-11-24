@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { Button } from './ui/button';
 import {
   DropdownMenu,
@@ -16,7 +16,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from './ui/alert-dialog';
 import {
   Dialog,
@@ -26,12 +25,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from './ui/dialog';
-import { ArrowLeft, MoreVertical, Plus, Trash2, FolderOpen, Settings } from 'lucide-react';
+import { ArrowLeft, MoreVertical, Plus, Trash2, FolderOpen, Settings, Loader2 } from 'lucide-react';
+import { chatsAPI } from '../lib/api/chats';
+import { useToast, ToastContainer } from './ui/toast';
 
 /**
  * ProjectHeader Component
  * Educational Note: Header for project workspace with navigation and project actions.
- * Uses DropdownMenu for additional options and AlertDialog for delete confirmation.
+ * Now loads and saves the system prompt using the real API.
  */
 
 interface ProjectHeaderProps {
@@ -44,26 +45,56 @@ interface ProjectHeaderProps {
   onDelete: () => void;
 }
 
-// Default system prompt for all projects
-const DEFAULT_SYSTEM_PROMPT = `You are LocalMind, an AI assistant helping users analyze and understand their project sources. You have access to documents, notes, and other materials the user has added to this project.
-
-Your role is to:
-1. Answer questions based on the provided sources
-2. Help synthesize information across multiple documents
-3. Generate insights and summaries
-4. Assist with content creation based on the project materials
-
-Always cite relevant sources when providing information. Be accurate, helpful, and concise in your responses.`;
-
 export const ProjectHeader: React.FC<ProjectHeaderProps> = ({
   project,
   onBack,
   onDelete,
 }) => {
+  const { toasts, dismissToast, success, error } = useToast();
+
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = React.useState(false);
-  const [systemPrompt, setSystemPrompt] = React.useState(DEFAULT_SYSTEM_PROMPT);
-  const [tempSystemPrompt, setTempSystemPrompt] = React.useState(DEFAULT_SYSTEM_PROMPT);
+
+  // System prompt state (dictation prompt removed - ElevenLabs doesn't support prompt parameter)
+  const [systemPrompt, setSystemPrompt] = React.useState('');
+  const [tempSystemPrompt, setTempSystemPrompt] = React.useState('');
+  const [defaultPrompt, setDefaultPrompt] = React.useState('');
+
+  const [loading, setLoading] = React.useState(false);
+  const [saving, setSaving] = React.useState(false);
+
+  /**
+   * Educational Note: Load the project's system prompt when component mounts.
+   * This fetches either the custom prompt or the default prompt from the backend.
+   */
+  useEffect(() => {
+    loadPrompts();
+  }, [project.id]);
+
+  /**
+   * Load system prompt for the project
+   * Educational Note: Dictation prompt removed - ElevenLabs doesn't support prompt parameter
+   */
+  const loadPrompts = async () => {
+    try {
+      setLoading(true);
+
+      // Load system prompts in parallel
+      const [projectPrompt, defaultPromptText] = await Promise.all([
+        chatsAPI.getProjectPrompt(project.id),
+        chatsAPI.getDefaultPrompt(),
+      ]);
+
+      // Set system prompt state
+      setSystemPrompt(projectPrompt);
+      setDefaultPrompt(defaultPromptText);
+    } catch (err) {
+      console.error('Error loading prompts:', err);
+      error('Failed to load settings');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleNewProject = () => {
     console.log('Creating new project...');
@@ -76,14 +107,37 @@ export const ProjectHeader: React.FC<ProjectHeaderProps> = ({
     setSettingsDialogOpen(true);
   };
 
-  const handleSaveSettings = () => {
-    console.log('Saving system prompt for project:', project.id);
-    setSystemPrompt(tempSystemPrompt);
-    setSettingsDialogOpen(false);
+  /**
+   * Educational Note: Save the system prompt to the backend.
+   * If prompt matches default, we save null to reset to default.
+   */
+  const handleSaveSettings = async () => {
+    try {
+      setSaving(true);
+
+      // Determine if prompt is custom or should reset to default
+      const systemPromptToSave = tempSystemPrompt === defaultPrompt ? null : tempSystemPrompt;
+
+      console.log('Saving settings for project:', project.id);
+
+      // Save system prompt
+      const systemResult = await chatsAPI.updateProjectPrompt(project.id, systemPromptToSave);
+
+      // Update local state
+      setSystemPrompt(systemResult.prompt);
+      setSettingsDialogOpen(false);
+
+      success('Settings saved successfully');
+    } catch (err) {
+      console.error('Error saving settings:', err);
+      error('Failed to save settings');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleResetPrompt = () => {
-    setTempSystemPrompt(DEFAULT_SYSTEM_PROMPT);
+  const handleResetSystemPrompt = () => {
+    setTempSystemPrompt(defaultPrompt);
   };
 
   return (
@@ -191,54 +245,79 @@ export const ProjectHeader: React.FC<ProjectHeaderProps> = ({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label htmlFor="system-prompt" className="text-sm font-medium">
-                System Prompt
-              </label>
-              <p className="text-xs text-muted-foreground">
-                This prompt defines how the AI assistant behaves when responding to queries about this project.
-                Customize it to match your project's specific needs and context.
-              </p>
-              <textarea
-                id="system-prompt"
-                value={tempSystemPrompt}
-                onChange={(e) => setTempSystemPrompt(e.target.value)}
-                className="w-full h-64 p-3 border rounded-md text-sm font-mono resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-                placeholder="Enter system prompt..."
-              />
-              <div className="flex justify-between items-center">
-                <p className="text-xs text-muted-foreground">
-                  {tempSystemPrompt.length} characters
-                </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleResetPrompt}
-                  disabled={tempSystemPrompt === DEFAULT_SYSTEM_PROMPT}
-                >
-                  Reset to Default
-                </Button>
+          <div className="space-y-6 py-4">
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                <span className="ml-2 text-sm text-muted-foreground">Loading settings...</span>
               </div>
-            </div>
+            ) : (
+              <>
+                {/* System Prompt Section */}
+                <div className="space-y-2">
+                  <label htmlFor="system-prompt" className="text-sm font-medium">
+                    System Prompt (AI Chat)
+                  </label>
+                  <p className="text-xs text-muted-foreground">
+                    This prompt defines how the AI assistant behaves when responding to queries about this project.
+                  </p>
+                  <textarea
+                    id="system-prompt"
+                    value={tempSystemPrompt}
+                    onChange={(e) => setTempSystemPrompt(e.target.value)}
+                    className="w-full h-48 p-3 border rounded-md text-sm font-mono resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                    placeholder="Enter system prompt..."
+                    disabled={saving}
+                  />
+                  <div className="flex justify-between items-center">
+                    <p className="text-xs text-muted-foreground">
+                      {tempSystemPrompt.length} characters
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleResetSystemPrompt}
+                      disabled={tempSystemPrompt === defaultPrompt || saving}
+                    >
+                      Reset to Default
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setSettingsDialogOpen(false)}
+              disabled={saving}
             >
               Cancel
             </Button>
             <Button
               onClick={handleSaveSettings}
-              disabled={tempSystemPrompt === systemPrompt}
+              disabled={
+                tempSystemPrompt === systemPrompt ||
+                saving ||
+                loading
+              }
             >
-              Save Changes
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Toast notifications */}
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 };

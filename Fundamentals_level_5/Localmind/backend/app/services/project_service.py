@@ -127,9 +127,9 @@ class ProjectService:
             "notes": [],
             "meetings": [],
             "settings": {
-                "theme": "light",
-                "ai_model": "claude-3-sonnet",
-                "auto_save": True
+                "ai_model": "claude-sonnet-4-5",
+                "auto_save": True,
+                "custom_prompt": None  # None = use default prompt
             }
         }
 
@@ -312,3 +312,65 @@ class ProjectService:
                 break
 
         self._save_index(index)
+
+    def update_custom_prompt(self, project_id: str, custom_prompt: Optional[str]) -> Optional[Dict[str, Any]]:
+        """
+        Update the project's custom system prompt.
+
+        Args:
+            project_id: The project UUID
+            custom_prompt: The custom prompt string, or None to reset to default
+
+        Returns:
+            Updated project settings or None if project not found
+
+        Educational Note: Custom prompts allow users to customize how the AI
+        behaves for specific projects. Setting to None reverts to the default prompt.
+        """
+        project_data = self.get_project(project_id)
+        if not project_data:
+            return None
+
+        # Ensure settings dict exists
+        if "settings" not in project_data:
+            project_data["settings"] = {
+                "ai_model": "claude-sonnet-4-5",
+                "auto_save": True,
+                "custom_prompt": None
+            }
+
+        # Update the custom prompt (None means use default)
+        project_data["settings"]["custom_prompt"] = custom_prompt
+        project_data["updated_at"] = datetime.now().isoformat()
+
+        # Save updated project
+        self._save_project_data(project_id, project_data)
+
+        print(f"✅ Updated custom prompt for project: {project_id}")
+
+        return project_data["settings"]
+
+    def get_project_settings(self, project_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get the project's settings.
+
+        Args:
+            project_id: The project UUID
+
+        Returns:
+            Project settings or None if project not found
+        """
+        project_data = self.get_project(project_id)
+        if not project_data:
+            return None
+
+        # Return settings with defaults for any missing fields
+        default_settings = {
+            "ai_model": "claude-sonnet-4-5",
+            "auto_save": True,
+            "custom_prompt": None
+        }
+
+        settings = project_data.get("settings", {})
+        # Merge with defaults
+        return {**default_settings, **settings}
