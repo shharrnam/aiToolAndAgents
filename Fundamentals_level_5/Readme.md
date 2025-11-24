@@ -1,151 +1,231 @@
-# LocalNotebook — Project Overview
+# LocalNotebook — Open Source NotebookLM Clone
 
 ## What We're Building
 
-A local Mac application that combines the core functionality of three popular AI tools into one unified product:
+An open-source web application that recreates the core functionality of Google's NotebookLM with local data storage and educational focus:
 
-- **NotebookLM** — The hub. Upload documents, create projects, take notes, chat with your knowledge base.
-- **Wispr Flow** — Global voice dictation. Hold a hotkey, speak, and text appears wherever your cursor is — any app.
-- **Granola** — Meeting intelligence. Capture meeting audio, get transcripts, and enhance notes automatically.
+- **NotebookLM Clone** — Upload documents, create projects, chat with your knowledge base, and generate content
+- **Educational Focus** — Learn LLM concepts through practical implementation
+- **Local-First** — All data stored locally, users control their own API keys
+- **Cross-Platform** — Web app that works on all platforms (Mac, Windows, Linux, mobile)
 
 ---
 
 ## Why This Exists
 
-- **For learning**: Users can explore the codebase, understand how these tools work under the hood, and use it as a starting point for their own projects.
-- **For personal use**: A private, local-first productivity tool where users control their own data and API costs.
-- **No subscriptions**: Users bring their own API keys and pay only for what they use.
+- **For learning**: Covers core LLM teaching concepts through practical implementation
+- **Open source**: Fully transparent codebase for learning and modification
+- **Privacy-first**: Local data storage with user-controlled API keys
+- **No subscriptions**: Pay only for the API calls you make
 
 ---
 
 ## Target Platform
 
-- **macOS only** (native Mac app)
-- Not published on App Store — users download and allow it manually
-- Requires one-time permission grants: Microphone, Accessibility, Screen Recording (for system audio)
+- **Web Application** — Works in any modern browser
+- **No app bundling complexity** — Same app works on all platforms
+- **Local data storage** — JSON files stored in browser's local storage or downloadable
+- **Self-hosted option** — Run locally or deploy to any web server
 
 ---
 
-## Core Features
+## Core Features (NotebookLM Clone)
 
-### NotebookLM-Style Hub
-- Create and manage projects
+### Document Management
+- Create and manage multiple projects/notebooks
 - Upload documents (PDF, text, markdown, URLs, YouTube videos)
-- Chat with project documents (RAG with citations)
-- Take and organize notes within projects
-- User-editable prompt templates
+- Support for multiple sources per project (up to 50)
+- Document indexing and organization
+- Source categorization and quick switching
 
-### Wispr Flow-Style Dictation
-- Global hotkey (works even when app is not focused)
-- Hold to record, release to transcribe
-- Text is typed into whatever app is currently focused
-- Works in any application — Claude.ai, Slack, VS Code, browser, etc.
+### AI-Powered Research
+- Natural language Q&A about documents
+- Context-aware responses with inline citations
+- Direct linking to source sections
+- Multi-document cross-referencing
+- Follow-up question suggestions
 
-### Granola-Style Meeting Capture
-- Capture system audio from any meeting app (Zoom, Google Meet, Teams, Slack)
-- Real-time transcription display
-- Speaker diarization with manual labeling (Speaker A, B, C → assign names post-meeting)
-- Auto-save transcript and notes to project
-- Optional LLM enhancement: summaries, action items, key decisions
+### Content Generation
+- **Study Guides** — Automatic study guide creation from sources
+- **Briefing Documents** — Executive summaries and briefings
+- **Audio Overviews** — Convert documents to podcast-style discussions
+- **Mind Maps** — Visual representation of document relationships
+- **Presentations** — Auto-generate slides from content
+- **Video Overviews** — Create video summaries with AI narration
+- **Outlines** — Structured outlines from notes
+- **Key Points** — Extract and organize main ideas
+
+### Chat Interface
+- Normal chat mode (general AI assistant)
+- Project chat mode (chat within document context)
+- Multiple chats per project
+- Chat history and management
+- Voice input for chat (using browser's speech API)
 
 ---
 
 ## Tech Stack
 
 ### Frontend
-- React
-- Shadcn/ui component library
-- Tailwind CSS
-- Vite
+- **React 18** with TypeScript
+- **Shadcn/ui** component library (Radix UI)
+- **Tailwind CSS** for styling
+- **Vite** for fast development
 
 ### Backend
-- Python Flask
-- Flask-SocketIO for real-time features
+- **Python Flask** for API server
+- **Flask-CORS** for cross-origin support
+- **Flask-SocketIO** for real-time features (optional)
 
 ### Storage
-- JSON files for all data (projects, documents, notes, meetings, chats)
-- No MySQL or PostgreSQL — keeps it simple and teachable
-- Data stored locally in user's home directory
+- **Browser LocalStorage** for client-side persistence
+- **IndexedDB** for larger document storage
+- **JSON files** for export/import functionality
+- No database required — keeps it simple and teachable
 
-### External APIs
+### AI & Processing
+- **LangChain** for document processing and RAG
+- **ChromaDB** or **FAISS** for local vector storage (no Pinecone needed)
+- **PDFPlumber** for PDF text extraction
+- **BeautifulSoup** for web scraping
 
-| Service | Provider | Purpose |
-|---------|----------|---------|
-| LLM / Chat | Claude API (Anthropic) | RAG, summarization, chat |
-| Voice Transcription | OpenAI Whisper API | Dictation and meeting transcripts |
-| Vector Embeddings | Pinecone | Document search and retrieval |
-| PDF / Image OCR | DeepSeek | Extract text before chunking |
-| YouTube Data | YouTube API | Fetch video metadata and transcripts |
-| Image Generation | Google Gemini | Generate images |
-| Video Generation | Veo 3 | Generate videos |
+### External APIs (User Provides Keys)
 
-Users generate their own API keys and bear the cost — this is for personal use.
-
----
-
-## System Audio Capture (How Meeting Recording Works)
-
-Since browsers cannot access system audio, the native Mac app uses **BlackHole** (a virtual audio driver):
-
-1. User installs BlackHole once (`brew install blackhole-2ch`)
-2. User creates a Multi-Output Device in Audio MIDI Setup (one-time setup)
-3. The app captures all system audio — any meeting app works (Zoom, Meet, Teams, etc.)
-4. Both system audio (other participants) and microphone (user) are captured for full transcript
+| Service | Provider | Purpose | Required |
+|---------|----------|---------|----------|
+| LLM / Chat | Claude API (Anthropic) | Main AI brain | Yes |
+| Embeddings | OpenAI API | Document embeddings | Yes |
+| Voice Transcription | Browser Speech API | Voice input | No (built-in) |
+| YouTube Data | YouTube API | Video transcripts | Optional |
+| Image Generation | Google Gemini | Visual content | Optional |
 
 ---
 
-## Speaker Identification
+## Learning Concepts Covered
 
-The app uses speaker diarization to detect different voices, but cannot identify who is speaking by name.
+### Core LLM Concepts
+1. **Normal Chat** — Basic LLM interaction
+2. **Project-Based Chat** — Context management and memory
+3. **RAG (Retrieval Augmented Generation)** — Document Q&A with citations
+4. **Embeddings & Vector Search** — Semantic document search
+5. **Prompt Engineering** — Customizable system prompts
 
-**Flow:**
-1. Meeting ends → App detects 3 speakers
-2. User plays a sample of each speaker's voice
-3. User assigns names (e.g., "Speaker A" → "Neel", "Speaker B" → "Client - Amit")
-4. Transcript is updated with proper names
+### Agent Architecture
+1. **Main Agent** — Orchestrates different capabilities
+2. **Sub-Agents** — Specialized agents for specific tasks:
+   - Document processing agent
+   - Content generation agent
+   - Audio overview agent (podcast generation)
+   - Presentation builder agent
+   - Mind map creator agent
+
+### Advanced Features
+1. **Multi-modal Processing** — Text, images, PDFs, videos
+2. **Streaming Responses** — Real-time AI output
+3. **Token Management** — Handling context limits
+4. **Citation Generation** — Linking responses to sources
 
 ---
 
-## User-Editable Prompts
+## Implementation Phases
 
-All LLM prompts are stored as markdown files that users can edit:
+### Phase 1: Core Foundation ✅
+- Project management UI
+- Document upload interface
+- Basic chat functionality
+- Local storage setup
 
-- RAG system prompt (how to answer questions from documents)
-- Meeting summary prompt (what to extract from transcripts)
-- Note enhancement prompt (how to improve raw notes)
-- Dictation cleanup prompt (how to format transcribed speech)
+### Phase 2: Document Processing
+- PDF text extraction
+- Web scraping for URLs
+- YouTube transcript fetching
+- Document chunking and indexing
+
+### Phase 3: RAG Implementation
+- Vector embeddings generation
+- Semantic search setup
+- Context retrieval
+- Citation system
+
+### Phase 4: Content Generation
+- Study guide generator
+- Summary creation
+- Audio overview (text-to-speech or AI dialogue)
+- Presentation builder
+
+### Phase 5: Advanced Features
+- Mind map visualization
+- Video overview generation
+- Multi-agent orchestration
+- Export/import functionality
 
 ---
 
 ## Distribution
 
-- **GitHub repository** — users clone or fork the repo
-- Repo contains:
-  - Full source code (for learning and modification)
-  - Pre-built Mac app in `/releases` folder (for immediate use)
-  - Setup instructions and documentation
-- Users can either:
-  - Run the bundled app directly (allow in System Settings, grant permissions)
-  - Run from source during development
-  - Build their own version after making changes
-- No App Store, no code signing required for personal use
-- Open source — learn, use, modify, extend
+### For Developers
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/localnotebook
+cd localnotebook
+
+# Install dependencies
+npm install
+pip install -r requirements.txt
+
+# Add your API keys to .env
+cp .env.example .env
+# Edit .env with your keys
+
+# Run development servers
+npm run dev  # Frontend
+python app.py  # Backend
+```
+
+### For End Users
+1. Download the release package
+2. Extract and open `index.html`
+3. Enter API keys in settings
+4. Start using immediately
+
+### Deployment Options
+- **Local only** — Run on localhost
+- **Self-hosted** — Deploy to your own server
+- **Static hosting** — Deploy frontend to Netlify/Vercel
+- **Container** — Docker compose for easy setup
 
 ---
 
-## What the Native Mac App Unlocks
+## Privacy & Data Control
 
-| Capability | Web App Only | Native Mac App |
-|------------|--------------|----------------|
-| Global hotkeys | ❌ | ✅ |
-| Type into any app | ❌ | ✅ |
-| Capture system audio | ❌ | ✅ |
-| Run in background | ❌ | ✅ |
-| Menu bar presence | ❌ | ✅ |
-| Mic access (anywhere) | ❌ | ✅ |
+- **No telemetry** — Zero tracking or analytics
+- **Local storage** — All data stays on user's device
+- **Export anytime** — Download all data as JSON
+- **API key security** — Keys stored locally, never sent to our servers
+- **Open source** — Full transparency, audit the code yourself
+
+---
+
+## Educational Value
+
+This project teaches:
+- How NotebookLM-style apps work internally
+- RAG implementation from scratch
+- Multi-agent architectures
+- Document processing pipelines
+- Vector databases and embeddings
+- Modern React development
+- API integration patterns
+- Local-first application design
+
+Perfect for:
+- Developers learning AI/LLM concepts
+- Students building portfolio projects
+- Teams needing a private knowledge base
+- Anyone wanting to understand modern AI tools
 
 ---
 
 ## Summary
 
-LocalNotebook is a personal, local-first AI productivity tool that combines document research, voice dictation, and meeting transcription into a single Mac app. It's designed to be educational, extensible, and cost-effective — users learn from the code, use it daily, and only pay for the API calls they make.
+LocalNotebook is an open-source NotebookLM clone designed for learning and practical use. It demonstrates core LLM concepts through a real-world application while giving users complete control over their data and costs. The web-based architecture ensures it works everywhere without platform-specific complexity.

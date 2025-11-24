@@ -113,16 +113,16 @@ export const ProjectList: React.FC<ProjectListProps> = ({
   }
 
   return (
-    <div className="container mx-auto p-8 max-w-6xl">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">LocalMind</h1>
-        <p className="text-muted-foreground">Your private AI knowledge hub</p>
-      </div>
-
-      {/* Create New Project Button */}
-      <div className="mb-6">
-        <Button onClick={onCreateNew} size="lg" className="w-full sm:w-auto">
+    <div className="space-y-6">
+      {/* Section Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Projects</h2>
+          <p className="text-muted-foreground">
+            Your knowledge workspaces • {projects.length} total
+          </p>
+        </div>
+        <Button onClick={onCreateNew} size="lg">
           <Plus className="mr-2 h-5 w-5" />
           Create New Project
         </Button>
