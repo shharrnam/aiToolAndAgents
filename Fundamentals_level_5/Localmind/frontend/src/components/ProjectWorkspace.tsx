@@ -77,7 +77,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
 
         {/* Center Panel - Chat */}
         <div className="flex-1 flex flex-col min-w-0">
-          <ChatPanel projectName={project.name} />
+          <ChatPanel projectId={project.id} projectName={project.name} />
         </div>
 
         {/* Right Panel - Studio */}

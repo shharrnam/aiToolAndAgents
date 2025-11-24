@@ -1,21 +1,13 @@
 {
   "projects": [
     {
-      "id": "a83b4d00-1d9e-4535-a7db-a6954390ab23",
-      "name": "Test Project 1",
-      "description": "Sample Description",
-      "created_at": "2025-11-24T18:31:44.478559",
-      "updated_at": "2025-11-24T18:31:44.478559",
-      "last_accessed": "2025-11-24T18:31:44.478559"
-    },
-    {
-      "id": "ed8808aa-bc52-4fa9-a640-1ac8bb1f943f",
-      "name": "Sample Project 2",
-      "description": "Random Description",
-      "created_at": "2025-11-24T20:19:13.801323",
-      "updated_at": "2025-11-24T20:19:13.801323",
-      "last_accessed": "2025-11-24T20:19:13.801323"
+      "id": "649490ba-b19f-4386-86dc-6e1ded6a0f66",
+      "name": "Growthx",
+      "description": "Researching about growthx",
+      "created_at": "2025-11-25T03:33:29.261038",
+      "updated_at": "2025-11-25T03:33:29.261038",
+      "last_accessed": "2025-11-25T03:33:29.261038"
     }
   ],
-  "last_updated": "2025-11-24T20:19:13.801767"
+  "last_updated": "2025-11-25T03:33:29.262041"
 }
