@@ -9,13 +9,13 @@
       "last_accessed": "2025-11-24T18:31:44.478559"
     },
     {
-      "id": "63c2be8b-a79e-46bc-ae3d-3b1bddf3b24c",
-      "name": "Test project 2",
-      "description": "data analytics tool",
-      "created_at": "2025-11-24T18:43:10.146348",
-      "updated_at": "2025-11-24T18:43:10.146348",
-      "last_accessed": "2025-11-24T18:43:10.146348"
+      "id": "ed8808aa-bc52-4fa9-a640-1ac8bb1f943f",
+      "name": "Sample Project 2",
+      "description": "Random Description",
+      "created_at": "2025-11-24T20:19:13.801323",
+      "updated_at": "2025-11-24T20:19:13.801323",
+      "last_accessed": "2025-11-24T20:19:13.801323"
     }
   ],
-  "last_updated": "2025-11-24T18:43:10.146976"
+  "last_updated": "2025-11-24T20:19:13.801767"
 }

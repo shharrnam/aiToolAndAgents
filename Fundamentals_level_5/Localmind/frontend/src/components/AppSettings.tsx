@@ -1,0 +1,443 @@
+import React, { useState, useEffect } from 'react';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { ScrollArea } from './ui/scroll-area';
+import { Separator } from './ui/separator';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from './ui/dialog';
+import {
+  Eye,
+  EyeOff,
+  Trash2,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+  Loader2
+} from 'lucide-react';
+import { settingsAPI } from '@/lib/api/settings';
+import type { ApiKey } from '@/lib/api/settings';
+import { useToast } from './ui/toast';
+
+/**
+ * AppSettings Component
+ * Educational Note: Manages API keys and application settings in a dialog.
+ * Extracted from Dashboard to follow the principle of component modularity.
+ *
+ * Features:
+ * - API key CRUD operations
+ * - Real-time validation
+ * - Masked display for security
+ * - Organized by category (AI, Storage, Utility)
+ */
+
+interface AppSettingsProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+interface ValidationState {
+  [key: string]: {
+    validating: boolean;
+    valid?: boolean;
+    message?: string;
+  };
+}
+
+export const AppSettings: React.FC<AppSettingsProps> = ({ open, onOpenChange }) => {
+  // UI State
+  const [showApiKeys, setShowApiKeys] = useState<{ [key: string]: boolean }>({});
+
+  // API Keys State
+  const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
+  const [modifiedKeys, setModifiedKeys] = useState<{ [key: string]: string }>({});
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [validationState, setValidationState] = useState<ValidationState>({});
+
+  // Toast notifications
+  const { success, error, info } = useToast();
+
+  // Load API keys when dialog opens
+  useEffect(() => {
+    if (open) {
+      loadApiKeys();
+    }
+  }, [open]);
+
+  /**
+   * Load API keys from backend
+   * Educational Note: Fetches current API key status with masked values
+   */
+  const loadApiKeys = async () => {
+    setLoading(true);
+    try {
+      const keys = await settingsAPI.getApiKeys();
+      setApiKeys(keys);
+      // Clear modified keys when loading fresh data
+      setModifiedKeys({});
+    } catch (err) {
+      console.error('Failed to load API keys:', err);
+      error('Failed to load API keys');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Save all modified API keys to backend
+   * Educational Note: Only sends keys that were actually modified to reduce
+   * unnecessary writes to the .env file
+   */
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      // Prepare updates - only send modified keys
+      const updates = Object.entries(modifiedKeys).map(([id, value]) => ({
+        id,
+        value
+      }));
+
+      if (updates.length > 0) {
+        await settingsAPI.updateApiKeys(updates);
+        success(`Successfully saved ${updates.length} API key${updates.length > 1 ? 's' : ''}`);
+
+        // Clear modified keys after successful save
+        setModifiedKeys({});
+        // Clear validation states after save
+        setValidationState({});
+
+        // Reload to get fresh masked values
+        await loadApiKeys();
+      } else {
+        info('No changes to save');
+      }
+
+      onOpenChange(false);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      console.error('Failed to save API keys:', err);
+      error(`Failed to save API keys: ${errorMessage}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  /**
+   * Update an API key value in local state
+   * Educational Note: Tracks changes locally without immediately saving,
+   * allowing users to make multiple edits before saving
+   */
+  const updateApiKey = (id: string, value: string) => {
+    // Track modified keys separately
+    setModifiedKeys(prev => ({ ...prev, [id]: value }));
+    // Update display immediately
+    setApiKeys(prev => prev.map(key =>
+      key.id === id ? { ...key, value } : key
+    ));
+  };
+
+  /**
+   * Toggle visibility of an API key (show/hide)
+   */
+  const toggleShowApiKey = (id: string) => {
+    setShowApiKeys(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  /**
+   * Delete an API key from backend
+   * Educational Note: This removes the key from .env file
+   */
+  const deleteApiKey = async (id: string) => {
+    try {
+      await settingsAPI.deleteApiKey(id);
+      // Clear from modified keys
+      setModifiedKeys(prev => {
+        const newKeys = { ...prev };
+        delete newKeys[id];
+        return newKeys;
+      });
+      // Update display
+      setApiKeys(prev => prev.map(key =>
+        key.id === id ? { ...key, value: '', is_set: false } : key
+      ));
+      success('API key deleted successfully');
+    } catch (err) {
+      console.error('Failed to delete API key:', err);
+      error('Failed to delete API key');
+    }
+  };
+
+  /**
+   * Validate an API key by making a test request, then auto-save if valid
+   * Educational Note: This combines validation and saving in one step for better UX.
+   * If the key works, we immediately save it to the .env file.
+   */
+  const validateApiKey = async (id: string) => {
+    const value = modifiedKeys[id] || apiKeys.find(k => k.id === id)?.value || '';
+    const keyName = apiKeys.find(k => k.id === id)?.name || id;
+
+    // Don't validate masked values
+    if (value.includes('***')) {
+      info('Cannot validate a masked API key. Please enter a new key.');
+      return;
+    }
+
+    setValidationState(prev => ({
+      ...prev,
+      [id]: { validating: true }
+    }));
+
+    try {
+      // Step 1: Validate the API key
+      const result = await settingsAPI.validateApiKey(id, value);
+
+      if (result.valid) {
+        // Step 2: If validation succeeds, immediately save the key
+        try {
+          await settingsAPI.updateApiKeys([{ id, value }]);
+
+          // Remove from modified keys since it's now saved
+          setModifiedKeys(prev => {
+            const newKeys = { ...prev };
+            delete newKeys[id];
+            return newKeys;
+          });
+
+          // Update validation state to show success
+          setValidationState(prev => ({
+            ...prev,
+            [id]: {
+              validating: false,
+              valid: true,
+              message: result.message
+            }
+          }));
+
+          // Show success message
+          success(`${keyName} validated and saved successfully!`);
+
+          // Reload API keys to get fresh masked values
+          await loadApiKeys();
+        } catch (saveErr) {
+          const saveErrorMessage = saveErr instanceof Error ? saveErr.message : 'Failed to save';
+          setValidationState(prev => ({
+            ...prev,
+            [id]: {
+              validating: false,
+              valid: false,
+              message: `Validation succeeded but save failed: ${saveErrorMessage}`
+            }
+          }));
+          error(`Failed to save ${keyName}: ${saveErrorMessage}`);
+        }
+      } else {
+        // Validation failed
+        setValidationState(prev => ({
+          ...prev,
+          [id]: {
+            validating: false,
+            valid: false,
+            message: result.message
+          }
+        }));
+        error(`${keyName} validation failed: ${result.message}`);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Validation failed';
+      setValidationState(prev => ({
+        ...prev,
+        [id]: {
+          validating: false,
+          valid: false,
+          message: errorMessage
+        }
+      }));
+      error(`Failed to validate ${keyName}: ${errorMessage}`);
+    }
+  };
+
+  /**
+   * Render a single API key input field with controls
+   * Educational Note: Extracted to a separate function to follow DRY principle
+   * and make the component more maintainable
+   */
+  const renderApiKeyField = (apiKey: ApiKey) => (
+    <div key={apiKey.id} className="space-y-2">
+      <div className="flex items-center justify-between">
+        <label className="text-sm font-medium flex items-center gap-2">
+          {apiKey.name}
+          {apiKey.required && (
+            <span className="text-xs text-destructive">*Required</span>
+          )}
+        </label>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => toggleShowApiKey(apiKey.id)}
+          >
+            {showApiKeys[apiKey.id] ? (
+              <EyeOff className="h-4 w-4" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => deleteApiKey(apiKey.id)}
+            disabled={!apiKey.value && !apiKey.is_set}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <Input
+          type={showApiKeys[apiKey.id] ? 'text' : 'password'}
+          placeholder={`Enter ${apiKey.name} key...`}
+          value={modifiedKeys[apiKey.id] !== undefined ? modifiedKeys[apiKey.id] : apiKey.value}
+          onChange={(e) => updateApiKey(apiKey.id, e.target.value)}
+          className="font-mono text-sm flex-1"
+        />
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => validateApiKey(apiKey.id)}
+          disabled={!modifiedKeys[apiKey.id] || modifiedKeys[apiKey.id].includes('***') || validationState[apiKey.id]?.validating}
+          className="min-w-[110px]"
+        >
+          {validationState[apiKey.id]?.validating ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin mr-1" />
+              Saving...
+            </>
+          ) : (
+            'Validate & Save'
+          )}
+        </Button>
+      </div>
+      <div className="space-y-1">
+        <p className="text-xs text-muted-foreground">{apiKey.description}</p>
+        {validationState[apiKey.id]?.message && (
+          <div className={`flex items-center gap-1 text-xs ${
+            validationState[apiKey.id]?.valid ? 'text-green-600' : 'text-red-600'
+          }`}>
+            {validationState[apiKey.id]?.valid ? (
+              <CheckCircle className="h-3 w-3" />
+            ) : (
+              <XCircle className="h-3 w-3" />
+            )}
+            <span>{validationState[apiKey.id]?.message}</span>
+          </div>
+        )}
+        {apiKey.is_set && !modifiedKeys[apiKey.id] && (
+          <div className="flex items-center gap-1 text-xs text-green-600">
+            <CheckCircle className="h-3 w-3" />
+            <span>Configured</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  /**
+   * Render API keys grouped by category
+   * Educational Note: This provides better organization and UX by grouping
+   * related settings together
+   */
+  const renderCategorySection = (title: string, category: 'ai' | 'storage' | 'utility') => {
+    const categoryKeys = apiKeys.filter(k => k.category === category);
+    if (categoryKeys.length === 0) return null;
+
+    return (
+      <div>
+        <h3 className="text-sm font-semibold mb-3">{title}</h3>
+        <div className="space-y-3">
+          {categoryKeys.map(renderApiKeyField)}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh]">
+        <DialogHeader>
+          <DialogTitle>App Settings</DialogTitle>
+          <DialogDescription>
+            Configure API keys and application settings. Keys are automatically saved after successful validation.
+          </DialogDescription>
+        </DialogHeader>
+
+        <ScrollArea className="h-[500px] mt-4">
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <AlertCircle className="h-4 w-4" />
+                  <p>API keys are securely stored in your backend .env file</p>
+                </div>
+
+                {/* AI Models Section */}
+                {renderCategorySection('AI Models', 'ai')}
+
+                <Separator />
+
+                {/* Storage Section */}
+                {renderCategorySection('Storage & Database', 'storage')}
+
+                <Separator />
+
+                {/* Utility Services Section */}
+                {renderCategorySection('Utility Services', 'utility')}
+              </div>
+            </div>
+          )}
+        </ScrollArea>
+
+        <DialogFooter className="mt-6">
+          {Object.keys(modifiedKeys).length > 0 ? (
+            <>
+              <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={saving || loading}
+                variant="default"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    Save {Object.keys(modifiedKeys).length} Unsaved Key{Object.keys(modifiedKeys).length > 1 ? 's' : ''}
+                  </>
+                )}
+              </Button>
+            </>
+          ) : (
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Close
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
