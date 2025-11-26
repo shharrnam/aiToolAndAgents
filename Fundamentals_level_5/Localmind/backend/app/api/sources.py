@@ -298,3 +298,123 @@ def get_allowed_types():
             'success': False,
             'error': str(e)
         }), 500
+
+
+@api_bp.route('/projects/<project_id>/sources/url', methods=['POST'])
+def add_url_source(project_id: str):
+    """
+    Add a URL source (website or YouTube link) to a project.
+
+    Educational Note: Accepts JSON with:
+    - url: The URL to store (required)
+    - name: Display name (optional, defaults to URL)
+    - description: Description of the source (optional)
+
+    The URL is stored as a .link file. Content fetching happens separately.
+    """
+    try:
+        data = request.get_json()
+
+        if not data:
+            return jsonify({
+                'success': False,
+                'error': 'No data provided'
+            }), 400
+
+        url = data.get('url')
+        if not url:
+            return jsonify({
+                'success': False,
+                'error': 'URL is required'
+            }), 400
+
+        source = source_service.add_url_source(
+            project_id=project_id,
+            url=url,
+            name=data.get('name'),
+            description=data.get('description', '')
+        )
+
+        return jsonify({
+            'success': True,
+            'source': source,
+            'message': 'URL source added successfully'
+        }), 201
+
+    except ValueError as e:
+        # Validation errors (invalid URL, etc.)
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+
+    except Exception as e:
+        current_app.logger.error(f"Error adding URL source: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@api_bp.route('/projects/<project_id>/sources/text', methods=['POST'])
+def add_text_source(project_id: str):
+    """
+    Add a pasted text source to a project.
+
+    Educational Note: Accepts JSON with:
+    - content: The pasted text content (required)
+    - name: Display name for the source (required)
+    - description: Description of the source (optional)
+
+    The text is stored as a .txt file.
+    """
+    try:
+        data = request.get_json()
+
+        if not data:
+            return jsonify({
+                'success': False,
+                'error': 'No data provided'
+            }), 400
+
+        content = data.get('content')
+        name = data.get('name')
+
+        if not content:
+            return jsonify({
+                'success': False,
+                'error': 'Content is required'
+            }), 400
+
+        if not name:
+            return jsonify({
+                'success': False,
+                'error': 'Name is required'
+            }), 400
+
+        source = source_service.add_text_source(
+            project_id=project_id,
+            content=content,
+            name=name,
+            description=data.get('description', '')
+        )
+
+        return jsonify({
+            'success': True,
+            'source': source,
+            'message': 'Text source added successfully'
+        }), 201
+
+    except ValueError as e:
+        # Validation errors (empty content, etc.)
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+
+    except Exception as e:
+        current_app.logger.error(f"Error adding text source: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500

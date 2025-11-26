@@ -3,27 +3,39 @@ API endpoints for chat management and conversations.
 
 Educational Note: These endpoints handle chat operations including
 creating chats, sending messages, and managing conversations within projects.
+
+Service Dependencies:
+- chat_service: Chat CRUD operations
+- claude_service: Claude API calls
+- message_service: Message persistence
+- prompt_service: Prompt management
 """
 from flask import jsonify, request, current_app
 from app.api import api_bp
-from app.services.chat_service import ChatService
+from app.services.chat_service import chat_service
+from app.services.claude_service import claude_service
+from app.services.message_service import message_service
+from app.services.prompt_service import prompt_service
 from app.services.project_service import ProjectService
 
-# Initialize services
-chat_service = ChatService()
+# Initialize project service (still uses class pattern)
 project_service = ProjectService()
 
+
+# =============================================================================
+# Chat CRUD Endpoints
+# =============================================================================
 
 @api_bp.route('/projects/<project_id>/chats', methods=['GET'])
 def list_project_chats(project_id):
     """
     Get all chats for a specific project.
 
-    Educational Note: Returns a list of chat metadata (not full messages)
+    Educational Note: Returns chat metadata only (not full messages)
     for efficient loading of the chat list in the UI.
     """
     try:
-        chats = chat_service.list_project_chats(project_id)
+        chats = chat_service.list_chats(project_id)
         return jsonify({
             'success': True,
             'chats': chats,
@@ -43,11 +55,11 @@ def create_chat(project_id):
     """
     Create a new chat in a project.
 
-    Educational Note: This initializes a new conversation with empty
-    message history. The chat title can be updated later.
+    Educational Note: Initializes an empty conversation.
+    Messages are added via the send_message endpoint.
     """
     try:
-        data = request.get_json()
+        data = request.get_json() or {}
         title = data.get('title', 'New Chat')
 
         chat = chat_service.create_chat(project_id, title)
@@ -70,7 +82,7 @@ def get_chat(project_id, chat_id):
     """
     Get full chat data including all messages.
 
-    Educational Note: This loads the complete conversation history
+    Educational Note: Loads the complete conversation history
     for display in the chat interface.
     """
     try:
@@ -95,49 +107,6 @@ def get_chat(project_id, chat_id):
         }), 500
 
 
-@api_bp.route('/projects/<project_id>/chats/<chat_id>/messages', methods=['POST'])
-def send_message(project_id, chat_id):
-    """
-    Send a message in a chat and get AI response.
-
-    Educational Note: This endpoint:
-    1. Receives user message
-    2. Adds it to chat history
-    3. Calls Claude API with full context
-    4. Returns both user message and AI response
-    """
-    try:
-        data = request.get_json()
-
-        if not data or 'message' not in data:
-            return jsonify({
-                'success': False,
-                'error': 'Message is required'
-            }), 400
-
-        user_message = data['message']
-
-        # Send message and get response
-        result = chat_service.send_message(project_id, chat_id, user_message)
-
-        return jsonify({
-            'success': True,
-            **result
-        }), 200
-
-    except ValueError as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 404
-    except Exception as e:
-        current_app.logger.error(f"Error sending message: {e}")
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
-
-
 @api_bp.route('/projects/<project_id>/chats/<chat_id>', methods=['PUT'])
 def update_chat(project_id, chat_id):
     """
@@ -154,9 +123,7 @@ def update_chat(project_id, chat_id):
                 'error': 'Title is required'
             }), 400
 
-        new_title = data['title']
-
-        chat = chat_service.update_chat_title(project_id, chat_id, new_title)
+        chat = chat_service.update_chat(project_id, chat_id, {"title": data['title']})
 
         if not chat:
             return jsonify({
@@ -182,8 +149,8 @@ def delete_chat(project_id, chat_id):
     """
     Delete a chat and all its messages.
 
-    Educational Note: This is a hard delete for simplicity.
-    In production, consider soft delete with archive functionality.
+    Educational Note: This is a hard delete. In production,
+    consider soft delete with archive functionality.
     """
     try:
         success = chat_service.delete_chat(project_id, chat_id)
@@ -207,16 +174,120 @@ def delete_chat(project_id, chat_id):
         }), 500
 
 
+# =============================================================================
+# Message Endpoints
+# =============================================================================
+
+@api_bp.route('/projects/<project_id>/chats/<chat_id>/messages', methods=['POST'])
+def send_message(project_id, chat_id):
+    """
+    Send a message in a chat and get AI response.
+
+    Educational Note: This endpoint orchestrates multiple services:
+    1. message_service: Store user message
+    2. prompt_service: Get system prompt
+    3. message_service: Build context for API
+    4. claude_service: Get AI response
+    5. message_service: Store AI response
+    6. chat_service: Sync index
+
+    This separation allows claude_service to be reused by subagents
+    and other tools without chat-specific logic.
+    """
+    try:
+        data = request.get_json()
+
+        if not data or 'message' not in data:
+            return jsonify({
+                'success': False,
+                'error': 'Message is required'
+            }), 400
+
+        user_message_text = data['message']
+
+        # Verify chat exists
+        chat = chat_service.get_chat(project_id, chat_id)
+        if not chat:
+            return jsonify({
+                'success': False,
+                'error': 'Chat not found'
+            }), 404
+
+        # Step 1: Store user message
+        user_msg = message_service.add_user_message(
+            project_id, chat_id, user_message_text
+        )
+
+        # Step 2: Get system prompt for this project
+        system_prompt = prompt_service.get_project_prompt(project_id)
+
+        # Step 3: Build message context for API
+        api_messages = message_service.build_api_messages(project_id, chat_id)
+
+        # Step 4: Call Claude API
+        try:
+            response = claude_service.send_message(
+                messages=api_messages,
+                system_prompt=system_prompt,
+                model="claude-sonnet-4-5-20250929",
+                max_tokens=4096
+            )
+
+            # Step 5: Store assistant response
+            assistant_msg = message_service.add_assistant_message(
+                project_id=project_id,
+                chat_id=chat_id,
+                content=response["content"],
+                model=response["model"],
+                tokens=response["usage"]
+            )
+
+        except Exception as api_error:
+            current_app.logger.error(f"Claude API error: {api_error}")
+            # Store error message
+            assistant_msg = message_service.add_assistant_message(
+                project_id=project_id,
+                chat_id=chat_id,
+                content=f"Sorry, I encountered an error: {str(api_error)}",
+                error=True
+            )
+
+        # Step 6: Sync chat index (updates message count, updated_at)
+        chat_service.sync_chat_to_index(project_id, chat_id)
+
+        return jsonify({
+            'success': True,
+            'user_message': user_msg,
+            'assistant_message': assistant_msg
+        }), 200
+
+    except ValueError as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 404
+    except Exception as e:
+        current_app.logger.error(f"Error sending message: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+# =============================================================================
+# Prompt Endpoints
+# =============================================================================
+
 @api_bp.route('/projects/<project_id>/prompt', methods=['GET'])
 def get_project_prompt(project_id):
     """
     Get the system prompt for a project (custom or default).
 
-    Educational Note: This returns the prompt that will be used
+    Educational Note: Returns the prompt that will be used
     for all AI conversations in this project.
     """
     try:
-        prompt = chat_service.get_project_prompt(project_id)
+        prompt = prompt_service.get_project_prompt(project_id)
 
         return jsonify({
             'success': True,
@@ -236,8 +307,7 @@ def update_project_prompt(project_id):
     """
     Update the project's custom system prompt.
 
-    Educational Note: This allows users to customize how the AI behaves
-    for a specific project. Setting prompt to null reverts to default.
+    Educational Note: Setting prompt to null/empty reverts to default.
     """
     try:
         data = request.get_json()
@@ -251,21 +321,21 @@ def update_project_prompt(project_id):
         # Get the custom prompt (can be null to reset to default)
         custom_prompt = data.get('prompt')
 
-        # If prompt is empty string, treat as None (use default)
+        # Treat empty string as None (use default)
         if custom_prompt == '':
             custom_prompt = None
 
-        # Update the project's custom prompt
-        settings = project_service.update_custom_prompt(project_id, custom_prompt)
+        # Update via prompt service
+        success = prompt_service.update_project_prompt(project_id, custom_prompt)
 
-        if settings is None:
+        if not success:
             return jsonify({
                 'success': False,
                 'error': 'Project not found'
             }), 404
 
-        # Return the current prompt (either custom or default)
-        current_prompt = chat_service.get_project_prompt(project_id)
+        # Return the current prompt
+        current_prompt = prompt_service.get_project_prompt(project_id)
 
         return jsonify({
             'success': True,
@@ -290,7 +360,7 @@ def get_default_prompt():
     projects don't have custom prompts.
     """
     try:
-        prompt = chat_service.get_default_prompt()
+        prompt = prompt_service.get_default_prompt()
 
         return jsonify({
             'success': True,

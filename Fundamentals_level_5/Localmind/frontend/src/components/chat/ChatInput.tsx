@@ -5,10 +5,10 @@
  * in real-time while recording.
  */
 
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Send, Mic, Loader2 } from 'lucide-react';
+import { Textarea } from '../ui/textarea';
+import { PaperPlaneTilt, Microphone, CircleNotch } from '@phosphor-icons/react';
 
 interface ChatInputProps {
   message: string;
@@ -31,14 +31,35 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   onSend,
   onMicClick,
 }) => {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
   // Display value combines typed message and partial transcript
   const displayMessage = partialTranscript
     ? message + (message && !message.endsWith(' ') ? ' ' : '') + partialTranscript
     : message;
 
+  // Auto-resize textarea based on content
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      // Max height of ~4 lines (approx 100px), min height of 40px
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 100)}px`;
+    }
+  }, [displayMessage]);
+
+  // Handle key down - Enter sends, Shift+Enter adds new line
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey && !isRecording) {
+      e.preventDefault(); // Prevent new line
+      onSend();
+    }
+    // Shift+Enter will naturally add a new line (default textarea behavior)
+  };
+
   return (
     <div className="border-t p-4">
-      <div className="flex gap-2">
+      <div className="flex gap-2 items-end">
         {/* Microphone Button - Click to toggle recording */}
         <Button
           variant={isRecording ? 'default' : 'outline'}
@@ -56,35 +77,39 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               : 'Click to start recording'
           }
         >
-          <Mic className={`h-4 w-4 ${isRecording ? 'text-white' : ''}`} />
+          <Microphone size={16} className={isRecording ? 'text-white' : ''} />
         </Button>
 
         <div className="flex-1 relative">
-          <Input
+          <Textarea
+            ref={textareaRef}
             placeholder={
               isRecording
                 ? 'Listening...'
                 : !transcriptionConfigured
                 ? 'Type your message... (voice disabled - set API key)'
-                : 'Ask about your sources...'
+                : 'Ask about your sources... (Shift+Enter for new line)'
             }
             value={displayMessage}
             onChange={(e) => onMessageChange(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && !isRecording && onSend()}
-            className={`pr-10 ${partialTranscript ? 'text-muted-foreground' : ''}`}
+            onKeyDown={handleKeyDown}
+            className={`pr-10 min-h-[40px] max-h-[100px] resize-none ${
+              partialTranscript ? 'text-muted-foreground' : ''
+            }`}
             disabled={sending || isRecording}
+            rows={1}
           />
           <Button
             variant="ghost"
             size="icon"
             onClick={onSend}
-            className="absolute right-1 top-1 h-7 w-7"
+            className="absolute right-1 bottom-1 h-7 w-7"
             disabled={!message.trim() || sending || isRecording}
           >
             {sending ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <CircleNotch size={14} className="animate-spin" />
             ) : (
-              <Send className="h-3.5 w-3.5" />
+              <PaperPlaneTilt size={14} />
             )}
           </Button>
         </div>
