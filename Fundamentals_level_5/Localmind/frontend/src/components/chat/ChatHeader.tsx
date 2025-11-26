@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
-import { Sparkles, Plus, MessageSquare, ChevronDown, Hash } from 'lucide-react';
+import { Sparkle, Plus, ChatCircle, CaretDown, Hash } from '@phosphor-icons/react';
 import type { Chat, ChatMetadata } from '../../lib/api/chats';
 
 interface ChatHeaderProps {
@@ -35,17 +35,17 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
     <div className="border-b px-6 py-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" />
+          <Sparkle size={20} className="text-primary" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-auto p-1 gap-2">
                 <span className="font-semibold">{activeChat?.title || 'Chat'}</span>
-                <ChevronDown className="h-4 w-4" />
+                <CaretDown size={16} />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-56">
               <DropdownMenuItem onClick={onShowChatList}>
-                <MessageSquare className="h-4 w-4 mr-2" />
+                <ChatCircle size={16} className="mr-2" />
                 View All Chats
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -55,7 +55,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   onClick={() => onSelectChat(chat.id)}
                   className={chat.id === activeChat?.id ? 'bg-accent' : ''}
                 >
-                  <Hash className="h-4 w-4 mr-2" />
+                  <Hash size={16} className="mr-2" />
                   {chat.title}
                 </DropdownMenuItem>
               ))}
@@ -69,7 +69,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               )}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={onNewChat}>
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus size={16} className="mr-2" />
                 New Chat
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -77,7 +77,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         </div>
 
         <Button variant="outline" size="sm" onClick={onNewChat}>
-          <Plus className="h-4 w-4" />
+          <Plus size={16} />
         </Button>
       </div>
       <p className="text-xs text-muted-foreground mt-1">

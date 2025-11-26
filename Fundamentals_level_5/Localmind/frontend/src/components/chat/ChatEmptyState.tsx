@@ -6,7 +6,7 @@
 
 import React from 'react';
 import { Button } from '../ui/button';
-import { Sparkles, MessageSquare, Plus } from 'lucide-react';
+import { Sparkle, ChatCircle, Plus } from '@phosphor-icons/react';
 
 interface ChatEmptyStateProps {
   projectName: string;
@@ -21,20 +21,20 @@ export const ChatEmptyState: React.FC<ChatEmptyStateProps> = ({
     <div className="flex flex-col h-full bg-background">
       <div className="border-b px-6 py-3">
         <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" />
+          <Sparkle size={20} className="text-primary" />
           <h2 className="font-semibold">Chat with {projectName}</h2>
         </div>
       </div>
 
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
-          <MessageSquare className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+          <ChatCircle size={48} className="mx-auto mb-4 text-muted-foreground" />
           <h3 className="text-lg font-semibold mb-2">No chats yet</h3>
           <p className="text-sm text-muted-foreground mb-4">
             Start a conversation to explore your project sources
           </p>
           <Button onClick={onNewChat} className="gap-2">
-            <Plus className="h-4 w-4" />
+            <Plus size={16} />
             Start New Chat
           </Button>
         </div>

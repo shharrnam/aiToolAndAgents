@@ -3,19 +3,19 @@ import { Button } from './ui/button';
 import { ScrollArea } from './ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import {
-  Wand2,
+  MagicWand,
   FileText,
-  Mail,
+  Envelope,
   Users,
-  ListTodo,
+  ListChecks,
   Brain,
-  Presentation,
+  PresentationChart,
   Headphones,
   Video,
-  Sparkles,
+  Sparkle,
   FileCode,
-  Zap,
-} from 'lucide-react';
+  Lightning,
+} from '@phosphor-icons/react';
 
 /**
  * StudioPanel Component
@@ -31,7 +31,7 @@ interface GenerationOption {
   id: string;
   title: string;
   description: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
   category: 'documents' | 'communication' | 'media' | 'analysis';
 }
 
@@ -41,7 +41,7 @@ const generationOptions: GenerationOption[] = [
     id: 'presentation',
     title: 'Generate Presentation',
     description: 'Create slides from your sources',
-    icon: Presentation,
+    icon: PresentationChart,
     category: 'documents',
   },
   {
@@ -55,7 +55,7 @@ const generationOptions: GenerationOption[] = [
     id: 'todo',
     title: 'Generate To-Do List',
     description: 'Action items from your content',
-    icon: ListTodo,
+    icon: ListChecks,
     category: 'documents',
   },
   // Communication
@@ -63,7 +63,7 @@ const generationOptions: GenerationOption[] = [
     id: 'team-email',
     title: 'Draft Team Email',
     description: 'Internal communication draft',
-    icon: Mail,
+    icon: Envelope,
     category: 'communication',
   },
   {
@@ -118,7 +118,7 @@ export const StudioPanel: React.FC<StudioPanelProps> = ({ projectId }) => {
               onClick={() => handleGenerate(option.id)}
             >
               <div className="flex gap-3 w-full">
-                <Icon className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                <Icon size={20} className="text-primary mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
                   <div className="font-medium text-sm">{option.title}</div>
                   <div className="text-xs text-muted-foreground mt-1">
@@ -138,7 +138,7 @@ export const StudioPanel: React.FC<StudioPanelProps> = ({ projectId }) => {
       {/* Header */}
       <div className="p-4 pl-12 border-b">
         <div className="flex items-center gap-2 mb-2">
-          <Wand2 className="h-5 w-5 text-primary" />
+          <MagicWand size={20} className="text-primary" />
           <h2 className="text-sm font-semibold">Studio</h2>
         </div>
         <p className="text-xs text-muted-foreground">
@@ -159,7 +159,7 @@ export const StudioPanel: React.FC<StudioPanelProps> = ({ projectId }) => {
               {/* Documents Section */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <FileCode className="h-4 w-4 text-muted-foreground" />
+                  <FileCode size={16} className="text-muted-foreground" />
                   <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Documents
                   </h3>
@@ -170,7 +170,7 @@ export const StudioPanel: React.FC<StudioPanelProps> = ({ projectId }) => {
               {/* Communication Section */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  <Envelope size={16} className="text-muted-foreground" />
                   <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Communication
                   </h3>
@@ -181,7 +181,7 @@ export const StudioPanel: React.FC<StudioPanelProps> = ({ projectId }) => {
               {/* Media Section */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <Video className="h-4 w-4 text-muted-foreground" />
+                  <Video size={16} className="text-muted-foreground" />
                   <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Media
                   </h3>
@@ -192,7 +192,7 @@ export const StudioPanel: React.FC<StudioPanelProps> = ({ projectId }) => {
               {/* Analysis Section */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <Brain className="h-4 w-4 text-muted-foreground" />
+                  <Brain size={16} className="text-muted-foreground" />
                   <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Analysis
                   </h3>
@@ -204,7 +204,7 @@ export const StudioPanel: React.FC<StudioPanelProps> = ({ projectId }) => {
             <TabsContent value="quick" className="space-y-3 mt-0">
               {/* Quick actions - most used */}
               <div className="text-center py-4">
-                <Zap className="h-8 w-8 mx-auto mb-3 text-primary" />
+                <Lightning size={32} className="mx-auto mb-3 text-primary" />
                 <p className="text-sm font-medium mb-1">Quick Actions</p>
                 <p className="text-xs text-muted-foreground mb-4">
                   Your most-used generation tools
@@ -220,7 +220,7 @@ export const StudioPanel: React.FC<StudioPanelProps> = ({ projectId }) => {
       {/* Footer with AI indicator */}
       <div className="p-4 border-t">
         <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-          <Sparkles className="h-3 w-3" />
+          <Sparkle size={12} />
           <span>Powered by AI</span>
         </div>
       </div>

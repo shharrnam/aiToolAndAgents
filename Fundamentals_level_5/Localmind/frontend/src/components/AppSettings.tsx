@@ -13,13 +13,13 @@ import {
 } from './ui/dialog';
 import {
   Eye,
-  EyeOff,
-  Trash2,
-  AlertCircle,
+  EyeSlash,
+  Trash,
+  Warning,
   CheckCircle,
   XCircle,
-  Loader2
-} from 'lucide-react';
+  CircleNotch,
+} from '@phosphor-icons/react';
 import { settingsAPI } from '@/lib/api/settings';
 import type { ApiKey } from '@/lib/api/settings';
 import { useToast } from './ui/toast';
@@ -284,9 +284,9 @@ export const AppSettings: React.FC<AppSettingsProps> = ({ open, onOpenChange }) 
             onClick={() => toggleShowApiKey(apiKey.id)}
           >
             {showApiKeys[apiKey.id] ? (
-              <EyeOff className="h-4 w-4" />
+              <EyeSlash size={16} />
             ) : (
-              <Eye className="h-4 w-4" />
+              <Eye size={16} />
             )}
           </Button>
           <Button
@@ -296,7 +296,7 @@ export const AppSettings: React.FC<AppSettingsProps> = ({ open, onOpenChange }) 
             onClick={() => deleteApiKey(apiKey.id)}
             disabled={!apiKey.value && !apiKey.is_set}
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash size={16} />
           </Button>
         </div>
       </div>
@@ -317,7 +317,7 @@ export const AppSettings: React.FC<AppSettingsProps> = ({ open, onOpenChange }) 
         >
           {validationState[apiKey.id]?.validating ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin mr-1" />
+              <CircleNotch size={16} className="animate-spin mr-1" />
               Saving...
             </>
           ) : (
@@ -332,16 +332,16 @@ export const AppSettings: React.FC<AppSettingsProps> = ({ open, onOpenChange }) 
             validationState[apiKey.id]?.valid ? 'text-green-600' : 'text-red-600'
           }`}>
             {validationState[apiKey.id]?.valid ? (
-              <CheckCircle className="h-3 w-3" />
+              <CheckCircle size={12} />
             ) : (
-              <XCircle className="h-3 w-3" />
+              <XCircle size={12} />
             )}
             <span>{validationState[apiKey.id]?.message}</span>
           </div>
         )}
         {apiKey.is_set && !modifiedKeys[apiKey.id] && (
           <div className="flex items-center gap-1 text-xs text-green-600">
-            <CheckCircle className="h-3 w-3" />
+            <CheckCircle size={12} />
             <span>Configured</span>
           </div>
         )}
@@ -381,13 +381,13 @@ export const AppSettings: React.FC<AppSettingsProps> = ({ open, onOpenChange }) 
         <ScrollArea className="h-[500px] mt-4">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin" />
+              <CircleNotch size={32} className="animate-spin" />
             </div>
           ) : (
             <div className="space-y-6">
               <div className="space-y-4">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <AlertCircle className="h-4 w-4" />
+                  <Warning size={16} />
                   <p>API keys are securely stored in your backend .env file</p>
                 </div>
 
@@ -421,7 +421,7 @@ export const AppSettings: React.FC<AppSettingsProps> = ({ open, onOpenChange }) 
               >
                 {saving ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <CircleNotch size={16} className="mr-2 animate-spin" />
                     Saving...
                   </>
                 ) : (

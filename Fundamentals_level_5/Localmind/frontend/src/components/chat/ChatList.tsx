@@ -8,7 +8,7 @@
 import React from 'react';
 import { Button } from '../ui/button';
 import { ScrollArea } from '../ui/scroll-area';
-import { Sparkles, Plus, Clock, Hash, Trash2 } from 'lucide-react';
+import { Sparkle, Plus, Clock, Hash, Trash } from '@phosphor-icons/react';
 import type { ChatMetadata } from '../../lib/api/chats';
 
 interface ChatListProps {
@@ -48,11 +48,11 @@ export const ChatList: React.FC<ChatListProps> = ({
       <div className="border-b px-6 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
+            <Sparkle size={20} className="text-primary" />
             <h2 className="font-semibold">All Chats</h2>
           </div>
           <Button size="sm" onClick={onNewChat} className="gap-2">
-            <Plus className="h-4 w-4" />
+            <Plus size={16} />
             New Chat
           </Button>
         </div>
@@ -71,13 +71,13 @@ export const ChatList: React.FC<ChatListProps> = ({
                   onClick={() => onSelectChat(chat.id)}
                 >
                   <div className="flex items-center gap-2">
-                    <Hash className="h-4 w-4 text-muted-foreground" />
+                    <Hash size={16} className="text-muted-foreground" />
                     <h3 className="font-medium text-sm">{chat.title}</h3>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
+                    <Clock size={12} />
                     {formatRelativeTime(chat.updated_at)}
                   </span>
                   <Button
@@ -89,7 +89,7 @@ export const ChatList: React.FC<ChatListProps> = ({
                       onDeleteChat(chat.id);
                     }}
                   >
-                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                    <Trash size={14} className="text-destructive" />
                   </Button>
                 </div>
               </div>

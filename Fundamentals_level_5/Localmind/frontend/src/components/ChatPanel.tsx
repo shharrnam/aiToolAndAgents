@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Sparkle, CircleNotch } from '@phosphor-icons/react';
 import { chatsAPI } from '../lib/api/chats';
 import type { Chat, ChatMetadata } from '../lib/api/chats';
 import { useToast, ToastContainer } from './ui/toast';
@@ -98,6 +98,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ projectId, projectName }) 
 
   /**
    * Send a message and get AI response
+   * Educational Note: We add the user message optimistically to the UI
+   * before the API call, so users see their message immediately.
    */
   const handleSend = async () => {
     if (!message.trim() || !activeChat || sending) return;
@@ -106,15 +108,33 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ projectId, projectName }) 
     setMessage('');
     setSending(true);
 
+    // Optimistically add user message to UI immediately
+    const tempUserMessage = {
+      id: `temp-${Date.now()}`,
+      role: 'user' as const,
+      content: userMessage,
+      timestamp: new Date().toISOString(),
+    };
+
+    setActiveChat((prev) => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        messages: [...prev.messages, tempUserMessage],
+      };
+    });
+
     try {
       const result = await chatsAPI.sendMessage(projectId, activeChat.id, userMessage);
 
-      // Update the active chat with new messages
+      // Replace temp message with real messages from API
       setActiveChat((prev) => {
         if (!prev) return null;
+        // Remove the temp message and add real user + assistant messages
+        const messagesWithoutTemp = prev.messages.filter((m) => m.id !== tempUserMessage.id);
         return {
           ...prev,
-          messages: [...prev.messages, result.user_message, result.assistant_message],
+          messages: [...messagesWithoutTemp, result.user_message, result.assistant_message],
           updated_at: new Date().toISOString(),
         };
       });
@@ -124,6 +144,14 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ projectId, projectName }) 
     } catch (err) {
       console.error('Error sending message:', err);
       error('Failed to send message');
+      // Remove the optimistic message on error
+      setActiveChat((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          messages: prev.messages.filter((m) => m.id !== tempUserMessage.id),
+        };
+      });
     } finally {
       setSending(false);
     }
@@ -190,13 +218,13 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ projectId, projectName }) 
       <div className="flex flex-col h-full bg-background">
         <div className="border-b px-6 py-3">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
+            <Sparkle size={20} className="text-primary" />
             <h2 className="font-semibold">Chat with {projectName}</h2>
           </div>
         </div>
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <Loader2 className="h-8 w-8 mx-auto mb-4 text-muted-foreground animate-spin" />
+            <CircleNotch size={32} className="mx-auto mb-4 text-muted-foreground animate-spin" />
             <p className="text-sm text-muted-foreground">Loading chats...</p>
           </div>
         </div>

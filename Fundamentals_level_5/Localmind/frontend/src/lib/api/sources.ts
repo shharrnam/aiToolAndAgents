@@ -17,7 +17,7 @@ export interface Source {
   name: string;
   original_filename: string;
   description: string;
-  category: 'document' | 'audio' | 'image' | 'data';
+  category: 'document' | 'audio' | 'image' | 'data' | 'link';
   mime_type: string;
   file_extension: string;
   file_size: number;
@@ -183,6 +183,52 @@ class SourcesAPI {
       throw error;
     }
   }
+
+  /**
+   * Add a URL source (website or YouTube link)
+   * Educational Note: URLs are stored as .link files containing JSON metadata.
+   * The actual content fetching happens in a separate processing step.
+   */
+  async addUrlSource(
+    projectId: string,
+    url: string,
+    name?: string,
+    description?: string
+  ): Promise<Source> {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/projects/${projectId}/sources/url`,
+        { url, name, description }
+      );
+      return response.data.source;
+    } catch (error) {
+      console.error('Error adding URL source:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Add a pasted text source
+   * Educational Note: Text is stored as a .txt file. This is the simplest
+   * source type - the raw content IS the processed content.
+   */
+  async addTextSource(
+    projectId: string,
+    content: string,
+    name: string,
+    description?: string
+  ): Promise<Source> {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/projects/${projectId}/sources/text`,
+        { content, name, description }
+      );
+      return response.data.source;
+    } catch (error) {
+      console.error('Error adding text source:', error);
+      throw error;
+    }
+  }
 }
 
 export const sourcesAPI = new SourcesAPI();
@@ -211,6 +257,8 @@ export function getCategoryIcon(category: string): string {
       return 'Image';
     case 'data':
       return 'Table';
+    case 'link':
+      return 'Link';
     default:
       return 'File';
   }

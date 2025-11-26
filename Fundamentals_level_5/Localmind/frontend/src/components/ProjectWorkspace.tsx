@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Button } from './ui/button';
-import { SourcesPanel } from './SourcesPanel';
+import { SourcesPanel } from './sources';
 import { ChatPanel } from './ChatPanel';
 import { StudioPanel } from './StudioPanel';
 import { ProjectHeader } from './ProjectHeader';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { CaretLeft, CaretRight } from '@phosphor-icons/react';
 
 /**
  * ProjectWorkspace Component
@@ -58,7 +58,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 onClick={() => setLeftPanelOpen(false)}
                 className="absolute top-2 right-2 z-10 h-8 w-8"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <CaretLeft size={16} />
               </Button>
             </>
           ) : (
@@ -69,7 +69,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 onClick={() => setLeftPanelOpen(true)}
                 className="h-8 w-8"
               >
-                <ChevronRight className="h-4 w-4" />
+                <CaretRight size={16} />
               </Button>
             </div>
           )}
@@ -95,7 +95,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 onClick={() => setRightPanelOpen(false)}
                 className="absolute top-2 left-2 z-10 h-8 w-8"
               >
-                <ChevronRight className="h-4 w-4" />
+                <CaretRight size={16} />
               </Button>
             </>
           ) : (
@@ -106,7 +106,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 onClick={() => setRightPanelOpen(true)}
                 className="h-8 w-8"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <CaretLeft size={16} />
               </Button>
             </div>
           )}

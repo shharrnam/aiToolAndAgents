@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, FolderOpen, Edit2, Trash2, Clock } from 'lucide-react';
+import { Plus, FolderOpen, PencilSimple, Trash, Clock } from '@phosphor-icons/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { projectsAPI } from '@/lib/api';
@@ -123,7 +123,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
           </p>
         </div>
         <Button onClick={onCreateNew} size="lg">
-          <Plus className="mr-2 h-5 w-5" />
+          <Plus size={20} className="mr-2" />
           Create New Project
         </Button>
       </div>
@@ -132,13 +132,13 @@ export const ProjectList: React.FC<ProjectListProps> = ({
       {projects.length === 0 ? (
         <Card className="text-center py-12">
           <CardContent>
-            <FolderOpen className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+            <FolderOpen size={48} className="mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">No projects yet</h3>
             <p className="text-muted-foreground mb-4">
               Create your first project to get started
             </p>
             <Button onClick={onCreateNew}>
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus size={16} className="mr-2" />
               Create First Project
             </Button>
           </CardContent>
@@ -165,13 +165,13 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                     onClick={(e) => handleDeleteProject(e, project.id)}
                     className="ml-2"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash size={16} />
                   </Button>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center text-sm text-muted-foreground">
-                  <Clock className="mr-1 h-3 w-3" />
+                  <Clock size={12} className="mr-1" />
                   Last opened: {formatDate(project.last_accessed)}
                 </div>
               </CardContent>

@@ -25,7 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from './ui/dialog';
-import { ArrowLeft, MoreVertical, Plus, Trash2, FolderOpen, Settings, Loader2 } from 'lucide-react';
+import { ArrowLeft, DotsThreeVertical, Plus, Trash, FolderOpen, Gear, CircleNotch } from '@phosphor-icons/react';
 import { chatsAPI } from '../lib/api/chats';
 import { useToast, ToastContainer } from './ui/toast';
 
@@ -150,11 +150,11 @@ export const ProjectHeader: React.FC<ProjectHeaderProps> = ({
           onClick={onBack}
           className="h-8 w-8"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft size={16} />
         </Button>
 
         <div className="flex items-center gap-2">
-          <FolderOpen className="h-5 w-5 text-muted-foreground" />
+          <FolderOpen size={20} className="text-muted-foreground" />
           <h1 className="text-lg font-semibold">{project.name}</h1>
         </div>
       </div>
@@ -167,7 +167,7 @@ export const ProjectHeader: React.FC<ProjectHeaderProps> = ({
           onClick={handleOpenSettings}
           className="gap-2"
         >
-          <Settings className="h-4 w-4" />
+          <Gear size={16} />
           Project Settings
         </Button>
 
@@ -177,14 +177,14 @@ export const ProjectHeader: React.FC<ProjectHeaderProps> = ({
           onClick={handleNewProject}
           className="gap-2"
         >
-          <Plus className="h-4 w-4" />
+          <Plus size={16} />
           New Project
         </Button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreVertical className="h-4 w-4" />
+              <DotsThreeVertical size={16} />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -202,7 +202,7 @@ export const ProjectHeader: React.FC<ProjectHeaderProps> = ({
               className="text-destructive focus:text-destructive"
               onClick={() => setDeleteDialogOpen(true)}
             >
-              <Trash2 className="h-4 w-4 mr-2" />
+              <Trash size={16} className="mr-2" />
               Delete Project
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -248,7 +248,7 @@ export const ProjectHeader: React.FC<ProjectHeaderProps> = ({
           <div className="space-y-6 py-4">
             {loading ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                <CircleNotch size={24} className="animate-spin text-muted-foreground" />
                 <span className="ml-2 text-sm text-muted-foreground">Loading settings...</span>
               </div>
             ) : (
@@ -305,7 +305,7 @@ export const ProjectHeader: React.FC<ProjectHeaderProps> = ({
             >
               {saving ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <CircleNotch size={16} className="mr-2 animate-spin" />
                   Saving...
                 </>
               ) : (

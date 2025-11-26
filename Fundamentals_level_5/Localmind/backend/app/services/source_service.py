@@ -50,6 +50,8 @@ ALLOWED_EXTENSIONS: Dict[str, str] = {
     '.jpe': 'image',
     # Data
     '.csv': 'data',
+    # Links (stored as JSON with URL metadata)
+    '.link': 'link',
 }
 
 # MIME type mappings
@@ -73,6 +75,7 @@ MIME_TYPES: Dict[str, str] = {
     '.jpg': 'image/jpeg',
     '.jpe': 'image/jpeg',
     '.csv': 'text/csv',
+    '.link': 'application/json',
 }
 
 
@@ -388,6 +391,178 @@ class SourceService:
             Dictionary mapping extensions to categories
         """
         return ALLOWED_EXTENSIONS.copy()
+
+    def add_url_source(
+        self,
+        project_id: str,
+        url: str,
+        name: Optional[str] = None,
+        description: str = ""
+    ) -> Dict[str, Any]:
+        """
+        Add a URL source (website or YouTube link) to a project.
+
+        Educational Note: URLs are stored as .link files containing JSON
+        with the URL and metadata. The actual content fetching/processing
+        happens in a separate processing step.
+
+        Args:
+            project_id: The project UUID
+            url: The URL to store
+            name: Optional display name (defaults to URL)
+            description: Optional description
+
+        Returns:
+            Source metadata dictionary
+        """
+        import re
+
+        # Basic URL validation
+        if not url or not url.strip():
+            raise ValueError("URL cannot be empty")
+
+        url = url.strip()
+
+        # Check if it looks like a URL
+        url_pattern = re.compile(
+            r'^https?://'  # http:// or https://
+            r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain
+            r'localhost|'  # localhost
+            r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # or IP
+            r'(?::\d+)?'  # optional port
+            r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+
+        if not url_pattern.match(url):
+            raise ValueError("Invalid URL format. Must start with http:// or https://")
+
+        # Detect if it's a YouTube URL
+        is_youtube = 'youtube.com' in url.lower() or 'youtu.be' in url.lower()
+        link_type = 'youtube' if is_youtube else 'website'
+
+        # Generate source ID and paths
+        source_id = str(uuid.uuid4())
+        stored_filename = f"{source_id}.link"
+        raw_dir = self._get_raw_dir(project_id)
+
+        # Ensure directories exist
+        self._ensure_directories(project_id)
+
+        # Create link file with URL data
+        link_data = {
+            "url": url,
+            "type": link_type,
+            "fetched": False,  # Will be set to True after content is fetched
+            "fetched_at": None
+        }
+
+        file_path = raw_dir / stored_filename
+        with open(file_path, 'w') as f:
+            json.dump(link_data, f, indent=2)
+
+        file_size = file_path.stat().st_size
+
+        # Create source metadata
+        timestamp = datetime.now().isoformat()
+        source_metadata = {
+            "id": source_id,
+            "project_id": project_id,
+            "name": name or url,
+            "original_filename": url,  # Store URL as original filename
+            "description": description,
+            "category": "link",
+            "mime_type": "application/json",
+            "file_extension": ".link",
+            "file_size": file_size,
+            "stored_filename": stored_filename,
+            "status": "uploaded",
+            "processing_info": {"link_type": link_type},
+            "created_at": timestamp,
+            "updated_at": timestamp
+        }
+
+        # Update index
+        index = self._load_index(project_id)
+        index["sources"].append(source_metadata)
+        self._save_index(project_id, index)
+
+        print(f"Added URL source: {url} ({source_id})")
+
+        return source_metadata
+
+    def add_text_source(
+        self,
+        project_id: str,
+        content: str,
+        name: str,
+        description: str = ""
+    ) -> Dict[str, Any]:
+        """
+        Add a pasted text source to a project.
+
+        Educational Note: Pasted text is stored as a .txt file.
+        This is the simplest source type - the raw content IS the processed content.
+
+        Args:
+            project_id: The project UUID
+            content: The pasted text content
+            name: Display name for the source (required)
+            description: Optional description
+
+        Returns:
+            Source metadata dictionary
+        """
+        # Validate inputs
+        if not content or not content.strip():
+            raise ValueError("Content cannot be empty")
+
+        if not name or not name.strip():
+            raise ValueError("Name is required for pasted text")
+
+        content = content.strip()
+        name = name.strip()
+
+        # Generate source ID and paths
+        source_id = str(uuid.uuid4())
+        stored_filename = f"{source_id}.txt"
+        raw_dir = self._get_raw_dir(project_id)
+
+        # Ensure directories exist
+        self._ensure_directories(project_id)
+
+        # Save the text content
+        file_path = raw_dir / stored_filename
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+
+        file_size = file_path.stat().st_size
+
+        # Create source metadata
+        timestamp = datetime.now().isoformat()
+        source_metadata = {
+            "id": source_id,
+            "project_id": project_id,
+            "name": name,
+            "original_filename": f"{name}.txt",
+            "description": description,
+            "category": "document",
+            "mime_type": "text/plain",
+            "file_extension": ".txt",
+            "file_size": file_size,
+            "stored_filename": stored_filename,
+            "status": "uploaded",
+            "processing_info": {"source_type": "pasted_text"},
+            "created_at": timestamp,
+            "updated_at": timestamp
+        }
+
+        # Update index
+        index = self._load_index(project_id)
+        index["sources"].append(source_metadata)
+        self._save_index(project_id, index)
+
+        print(f"Added text source: {name} ({source_id})")
+
+        return source_metadata
 
     def get_sources_summary(self, project_id: str) -> Dict[str, Any]:
         """

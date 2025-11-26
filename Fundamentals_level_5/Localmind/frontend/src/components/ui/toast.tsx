@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, AlertCircle, X } from 'lucide-react';
+import { CheckCircle, XCircle, Info, X } from '@phosphor-icons/react';
 
 export type ToastType = 'success' | 'error' | 'info';
 
@@ -47,11 +47,11 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onDismiss }) => {
   const getIcon = () => {
     switch (toast.type) {
       case 'success':
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
+        return <CheckCircle size={20} className="text-green-500" />;
       case 'error':
-        return <XCircle className="h-5 w-5 text-red-500" />;
+        return <XCircle size={20} className="text-red-500" />;
       case 'info':
-        return <AlertCircle className="h-5 w-5 text-blue-500" />;
+        return <Info size={20} className="text-blue-500" />;
     }
   };
 
@@ -76,7 +76,7 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onDismiss }) => {
         onClick={() => onDismiss(toast.id)}
         className="text-gray-400 hover:text-gray-600"
       >
-        <X className="h-4 w-4" />
+        <X size={16} />
       </button>
     </div>
   );
