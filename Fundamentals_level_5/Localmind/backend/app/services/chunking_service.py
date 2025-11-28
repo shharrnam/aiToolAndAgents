@@ -1,9 +1,14 @@
 """
 Chunking Service - Parse extracted text and split by pages.
 
-Educational Note: For our PDF extraction, each page is already a logical chunk.
-The extracted text file has page markers like:
-    === PDF PAGE 1 of 10 ===
+Educational Note: This service parses extracted text into page-based chunks.
+It supports multiple page marker formats:
+    === PDF PAGE 1 of 10 ===     (from PDF extraction)
+    === TEXT PAGE 1 of 5 ===     (from text file processing)
+    === DOCX PAGE 1 of 5 ===     (from Word document processing)
+    === PPTX PAGE 1 of 10 ===    (from PowerPoint presentation processing)
+    === AUDIO PAGE 1 of 5 ===    (from audio transcription)
+    === LINK PAGE 1 of 5 ===     (from URL/link extraction)
 
 We parse these markers to split the content into page-based chunks.
 Each chunk = one page, which provides:
@@ -54,9 +59,21 @@ class ChunkingService:
     page boundaries and context across pages.
     """
 
-    # Regex pattern to match page markers
-    # Matches: === PDF PAGE 1 of 10 === or === PDF PAGE 1 of 10 (continues...)===
-    PAGE_MARKER_PATTERN = r'=== PDF PAGE (\d+) of (\d+).*?==='
+    # Regex patterns to match page markers from different source types
+    # PDF: === PDF PAGE 1 of 10 === or === PDF PAGE 1 of 10 (continues...)===
+    PDF_PAGE_PATTERN = r'=== PDF PAGE (\d+) of (\d+).*?==='
+    # TEXT: === TEXT PAGE 1 of 5 ===
+    TEXT_PAGE_PATTERN = r'=== TEXT PAGE (\d+) of (\d+) ==='
+    # DOCX: === DOCX PAGE 1 of 5 ===
+    DOCX_PAGE_PATTERN = r'=== DOCX PAGE (\d+) of (\d+) ==='
+    # PPTX: === PPTX PAGE 1 of 10 === or === PPTX PAGE 1 of 10 (continues from previous) ===
+    PPTX_PAGE_PATTERN = r'=== PPTX PAGE (\d+) of (\d+).*?==='
+    # AUDIO: === AUDIO PAGE 1 of 5 ===
+    AUDIO_PAGE_PATTERN = r'=== AUDIO PAGE (\d+) of (\d+) ==='
+    # LINK: === LINK PAGE 1 of 5 ===
+    LINK_PAGE_PATTERN = r'=== LINK PAGE (\d+) of (\d+) ==='
+    # Combined pattern for finding any page marker
+    ANY_PAGE_PATTERN = r'=== (?:PDF|TEXT|DOCX|PPTX|AUDIO|LINK) PAGE (\d+) of (\d+).*?==='
 
     def __init__(self):
         """Initialize the chunking service."""
@@ -69,21 +86,37 @@ class ChunkingService:
         source_name: str
     ) -> List[Chunk]:
         """
-        Parse extracted PDF text into page-based chunks.
+        Parse extracted text into page-based chunks.
 
-        Educational Note: The extracted text format is:
-            # Extracted from PDF: filename.pdf
-            # Total pages: 10
-            ...
+        Educational Note: This method handles PDF, TEXT, DOCX, PPTX, AUDIO, and LINK sources.
+        The extracted text format uses page markers:
 
+        For PDFs:
             === PDF PAGE 1 of 10 ===
-
             [page 1 content]
 
-            === PDF PAGE 2 of 10 ===
+        For text files:
+            === TEXT PAGE 1 of 5 ===
+            [page 1 content]
 
-            [page 2 content]
-            ...
+        For Word documents:
+            === DOCX PAGE 1 of 5 ===
+            [page 1 content]
+
+        For PowerPoint presentations:
+            === PPTX PAGE 1 of 10 ===
+            [slide 1 content]
+
+        For audio transcriptions:
+            === AUDIO PAGE 1 of 5 ===
+            [transcript segment]
+
+        For URL/link sources:
+            === LINK PAGE 1 of 5 ===
+            [extracted web content]
+
+        All formats are parsed the same way - we find all page markers
+        and extract content between them.
 
         Args:
             text: The full extracted text content
@@ -98,8 +131,8 @@ class ChunkingService:
 
         chunks = []
 
-        # Find all page markers and their positions
-        markers = list(re.finditer(self.PAGE_MARKER_PATTERN, text))
+        # Find all page markers and their positions (supports both PDF and TEXT markers)
+        markers = list(re.finditer(self.ANY_PAGE_PATTERN, text))
 
         if not markers:
             # No page markers found - treat entire text as one chunk

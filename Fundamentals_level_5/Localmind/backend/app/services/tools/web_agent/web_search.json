@@ -1,0 +1,7 @@
+{
+  "_comment": "Claude Server Tool - web_search_20250305. Claude handles execution automatically.",
+  "_type": "server_tool",
+  "type": "web_search_20250305",
+  "name": "web_search",
+  "max_uses": 5
+}
