@@ -159,6 +159,29 @@ class PromptService:
         except IOError:
             return False
 
+    def get_agent_prompt(self, agent_name: str) -> Optional[str]:
+        """
+        Load a prompt for a specific agent.
+
+        Educational Note: Agents (like web_agent, pdf_agent, etc.) have
+        their own specialized prompts stored in data/prompts/{agent_name}_prompt.json
+
+        Args:
+            agent_name: Name of the agent (e.g., "web_agent")
+
+        Returns:
+            The agent's system prompt, or None if not found
+        """
+        prompt_file = self.prompts_dir / f"{agent_name}_prompt.json"
+
+        try:
+            with open(prompt_file, 'r') as f:
+                prompt_data = json.load(f)
+                # Look for system_prompt first (new format), then prompt (legacy)
+                return prompt_data.get("system_prompt") or prompt_data.get("prompt")
+        except (FileNotFoundError, json.JSONDecodeError):
+            return None
+
 
 # Singleton instance for easy import
 prompt_service = PromptService()

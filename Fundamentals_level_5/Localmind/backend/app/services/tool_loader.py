@@ -171,6 +171,76 @@ class ToolLoader:
 
         return [f.stem for f in category_dir.glob("*.json")]
 
+    def load_tools_for_agent(
+        self,
+        category: str
+    ) -> Dict[str, List[Dict[str, Any]]]:
+        """
+        Load all tools from a category, separated by type.
+
+        Educational Note: Agent tools can be of different types:
+        - server_tools: Claude handles execution (web_search, web_fetch)
+        - client_tools: We execute them (tavily_search, custom tools)
+        - termination_tools: Signal agent completion (return_search_result)
+
+        Server tools use a special format with "type" field.
+        Client tools use standard format with "input_schema".
+
+        Args:
+            category: Tool category (subdirectory name, e.g., "web_agent")
+
+        Returns:
+            Dict with 'server_tools', 'client_tools', and 'beta_headers'
+        """
+        category_dir = self.tools_dir / category
+
+        if not category_dir.exists():
+            raise FileNotFoundError(
+                f"Tool category not found: {category_dir}\n"
+                f"Available categories: {[d.name for d in self.tools_dir.iterdir() if d.is_dir()]}"
+            )
+
+        server_tools = []
+        client_tools = []
+        beta_headers = []
+
+        for tool_file in category_dir.glob("*.json"):
+            with open(tool_file, "r") as f:
+                tool_def = json.load(f)
+
+            tool_type = tool_def.get("_type", "client_tool")
+
+            if tool_type == "server_tool":
+                # Server tools use special format for Claude API
+                server_tool = {
+                    "type": tool_def["type"],
+                    "name": tool_def["name"],
+                }
+                if "max_uses" in tool_def:
+                    server_tool["max_uses"] = tool_def["max_uses"]
+
+                server_tools.append(server_tool)
+
+                # Collect beta headers
+                if "_beta_header" in tool_def:
+                    beta_headers.append(tool_def["_beta_header"])
+
+            else:
+                # Client tools (including termination) use standard format
+                self._validate_tool_definition(tool_def, str(tool_file))
+                client_tool = {
+                    "name": tool_def["name"],
+                    "description": tool_def["description"],
+                    "input_schema": tool_def["input_schema"],
+                }
+                client_tools.append(client_tool)
+
+        return {
+            "server_tools": server_tools,
+            "client_tools": client_tools,
+            "beta_headers": beta_headers
+        }
+
 
 # Singleton instance for easy import
 tool_loader = ToolLoader()

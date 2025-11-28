@@ -54,6 +54,7 @@ class ClaudeService:
         temperature: float = 0.2,
         tools: Optional[List[Dict[str, Any]]] = None,
         tool_choice: Optional[Dict[str, Any]] = None,
+        extra_headers: Optional[Dict[str, str]] = None,
     ) -> Dict[str, Any]:
         """
         Send messages to Claude and get a response.
@@ -72,6 +73,7 @@ class ClaudeService:
             temperature: Sampling temperature (default: 0.2)
             tools: Optional list of tool definitions for tool use
             tool_choice: Optional tool choice configuration
+            extra_headers: Optional headers for beta features (e.g., {"anthropic-beta": "web-fetch-2025-09-10"})
 
         Returns:
             Dict containing:
@@ -106,6 +108,10 @@ class ClaudeService:
 
         if tool_choice:
             api_params["tool_choice"] = tool_choice
+
+        # Add extra headers for beta features (e.g., web_fetch)
+        if extra_headers:
+            api_params["extra_headers"] = extra_headers
 
         # Make API call
         response = client.messages.create(**api_params)
