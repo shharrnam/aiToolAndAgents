@@ -15,6 +15,7 @@ import { QuizListItem } from './quiz';
 import { SocialPostListItem } from './social';
 import { InfographicListItem } from './infographic';
 import { EmailListItem } from './email';
+import { ComponentListItem } from './components';
 import type {
   AudioJob,
   AdJob,
@@ -24,7 +25,8 @@ import type {
   QuizJob,
   SocialPostJob,
   InfographicJob,
-  EmailJob
+  EmailJob,
+  ComponentJob
 } from '../../lib/api/studio';
 import type { StudioSignal } from './types';
 
@@ -52,7 +54,7 @@ interface StudioGeneratedContentProps {
 
   // Website
   savedWebsiteJobs: WebsiteJob[];
-  openWebsite: (jobId: string) => void;
+  setViewingWebsiteJob: (job: WebsiteJob) => void;
   downloadWebsite: (jobId: string) => void;
 
   // Quiz
@@ -70,6 +72,10 @@ interface StudioGeneratedContentProps {
   // Email
   savedEmailJobs: EmailJob[];
   setViewingEmailJob: (job: EmailJob) => void;
+
+  // Components
+  savedComponentJobs: ComponentJob[];
+  setViewingComponentJob: (job: ComponentJob) => void;
 }
 
 export const StudioGeneratedContent: React.FC<StudioGeneratedContentProps> = ({
@@ -86,7 +92,7 @@ export const StudioGeneratedContent: React.FC<StudioGeneratedContentProps> = ({
   savedMindMapJobs,
   setViewingMindMapJob,
   savedWebsiteJobs,
-  openWebsite,
+  setViewingWebsiteJob,
   downloadWebsite,
   savedQuizJobs,
   setViewingQuizJob,
@@ -96,6 +102,8 @@ export const StudioGeneratedContent: React.FC<StudioGeneratedContentProps> = ({
   setViewingInfographicJob,
   savedEmailJobs,
   setViewingEmailJob,
+  savedComponentJobs,
+  setViewingComponentJob,
 }) => {
   if (signals.length === 0) {
     return (
@@ -169,7 +177,7 @@ export const StudioGeneratedContent: React.FC<StudioGeneratedContentProps> = ({
           <WebsiteListItem
             key={job.id}
             job={job}
-            onOpen={() => openWebsite(job.id)}
+            onOpen={() => setViewingWebsiteJob(job)}
             onDownload={(e) => {
               e.stopPropagation();
               downloadWebsite(job.id);
@@ -223,6 +231,19 @@ export const StudioGeneratedContent: React.FC<StudioGeneratedContentProps> = ({
             key={job.id}
             job={job}
             onClick={() => setViewingEmailJob(job)}
+          />
+        ))}
+
+      {/* Saved Component Jobs - filter by source_id from signals */}
+      {savedComponentJobs
+        .filter((job) => signals.some((s) =>
+          s.sources.some((src) => src.source_id === job.source_id)
+        ))
+        .map((job) => (
+          <ComponentListItem
+            key={job.id}
+            job={job}
+            onClick={() => setViewingComponentJob(job)}
           />
         ))}
     </>

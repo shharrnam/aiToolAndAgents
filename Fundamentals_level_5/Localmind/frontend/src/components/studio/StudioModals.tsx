@@ -8,18 +8,22 @@ import React from 'react';
 import { AdViewerModal } from './ads';
 import { FlashCardViewerModal } from './flashcards';
 import { MindMapViewerModal } from './mindmap';
+import { WebsiteViewerModal } from './website';
 import { QuizViewerModal } from './quiz';
 import { SocialPostViewerModal } from './social';
 import { InfographicViewerModal } from './infographic';
 import { EmailViewerModal } from './email';
+import { ComponentViewerModal } from './components';
 import type {
   AdJob,
   FlashCardJob,
   MindMapJob,
+  WebsiteJob,
   QuizJob,
   SocialPostJob,
   InfographicJob,
-  EmailJob
+  EmailJob,
+  ComponentJob
 } from '../../lib/api/studio';
 
 interface StudioModalsProps {
@@ -37,6 +41,10 @@ interface StudioModalsProps {
   viewingMindMapJob: MindMapJob | null;
   setViewingMindMapJob: (job: MindMapJob | null) => void;
 
+  // Website
+  viewingWebsiteJob: WebsiteJob | null;
+  setViewingWebsiteJob: (job: WebsiteJob | null) => void;
+
   // Quiz
   viewingQuizJob: QuizJob | null;
   setViewingQuizJob: (job: QuizJob | null) => void;
@@ -52,6 +60,10 @@ interface StudioModalsProps {
   // Email
   viewingEmailJob: EmailJob | null;
   setViewingEmailJob: (job: EmailJob | null) => void;
+
+  // Components
+  viewingComponentJob: ComponentJob | null;
+  setViewingComponentJob: (job: ComponentJob | null) => void;
 }
 
 export const StudioModals: React.FC<StudioModalsProps> = ({
@@ -62,6 +74,8 @@ export const StudioModals: React.FC<StudioModalsProps> = ({
   setViewingFlashCardJob,
   viewingMindMapJob,
   setViewingMindMapJob,
+  viewingWebsiteJob,
+  setViewingWebsiteJob,
   viewingQuizJob,
   setViewingQuizJob,
   viewingSocialPostJob,
@@ -70,6 +84,8 @@ export const StudioModals: React.FC<StudioModalsProps> = ({
   setViewingInfographicJob,
   viewingEmailJob,
   setViewingEmailJob,
+  viewingComponentJob,
+  setViewingComponentJob,
 }) => {
   return (
     <>
@@ -89,6 +105,13 @@ export const StudioModals: React.FC<StudioModalsProps> = ({
       <MindMapViewerModal
         viewingMindMapJob={viewingMindMapJob}
         onClose={() => setViewingMindMapJob(null)}
+      />
+
+      {/* Website Viewer Modal */}
+      <WebsiteViewerModal
+        projectId={projectId}
+        viewingWebsiteJob={viewingWebsiteJob}
+        onClose={() => setViewingWebsiteJob(null)}
       />
 
       {/* Quiz Viewer Modal */}
@@ -114,6 +137,13 @@ export const StudioModals: React.FC<StudioModalsProps> = ({
         projectId={projectId}
         viewingEmailJob={viewingEmailJob}
         onClose={() => setViewingEmailJob(null)}
+      />
+
+      {/* Component Viewer Modal */}
+      <ComponentViewerModal
+        projectId={projectId}
+        viewingComponentJob={viewingComponentJob}
+        onClose={() => setViewingComponentJob(null)}
       />
     </>
   );

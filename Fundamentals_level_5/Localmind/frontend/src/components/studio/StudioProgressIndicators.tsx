@@ -14,7 +14,8 @@ import { QuizProgressIndicator } from './quiz';
 import { SocialPostProgressIndicator } from './social';
 import { InfographicProgressIndicator } from './infographic';
 import { EmailProgressIndicator } from './email';
-import type { AudioJob, AdJob, FlashCardJob, MindMapJob, WebsiteJob, QuizJob, SocialPostJob, InfographicJob, EmailJob } from '../../lib/api/studio';
+import { ComponentProgressIndicator } from './components';
+import type { AudioJob, AdJob, FlashCardJob, MindMapJob, WebsiteJob, QuizJob, SocialPostJob, InfographicJob, EmailJob, ComponentJob } from '../../lib/api/studio';
 
 interface StudioProgressIndicatorsProps {
   // Audio
@@ -52,6 +53,10 @@ interface StudioProgressIndicatorsProps {
   // Email
   isGeneratingEmail: boolean;
   currentEmailJob: EmailJob | null;
+
+  // Components
+  isGeneratingComponents: boolean;
+  currentComponentJob: ComponentJob | null;
 }
 
 export const StudioProgressIndicators: React.FC<StudioProgressIndicatorsProps> = ({
@@ -73,6 +78,8 @@ export const StudioProgressIndicators: React.FC<StudioProgressIndicatorsProps> =
   currentInfographicJob,
   isGeneratingEmail,
   currentEmailJob,
+  isGeneratingComponents,
+  currentComponentJob,
 }) => {
   return (
     <>
@@ -119,6 +126,11 @@ export const StudioProgressIndicators: React.FC<StudioProgressIndicatorsProps> =
       {/* Email Template Generation Progress */}
       {isGeneratingEmail && (
         <EmailProgressIndicator currentEmailJob={currentEmailJob} />
+      )}
+
+      {/* Component Generation Progress */}
+      {isGeneratingComponents && (
+        <ComponentProgressIndicator currentComponentJob={currentComponentJob} />
       )}
     </>
   );

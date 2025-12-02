@@ -20,6 +20,7 @@ import { useSocialPostGeneration } from './social';
 import { useAudioGeneration } from './audio';
 import { useMindMapGeneration } from './mindmap';
 import { useQuizGeneration } from './quiz';
+import { useComponentGeneration } from './components';
 import { StudioCollapsedView } from './StudioCollapsedView';
 import { StudioSignalPicker } from './StudioSignalPicker';
 import { StudioProgressIndicators } from './StudioProgressIndicators';
@@ -143,11 +144,25 @@ export const StudioPanel: React.FC<StudioPanelProps> = ({
     savedWebsiteJobs,
     currentWebsiteJob,
     isGeneratingWebsite,
+    viewingWebsiteJob,
+    setViewingWebsiteJob,
     loadSavedJobs: loadSavedWebsiteJobs,
     handleWebsiteGeneration,
     openWebsite,
     downloadWebsite,
   } = useWebsiteGeneration(projectId);
+
+  // Component generation hook
+  const {
+    savedComponentJobs,
+    currentComponentJob,
+    isGeneratingComponents,
+    viewingComponentJob,
+    setViewingComponentJob,
+    loadSavedJobs: loadSavedComponentJobs,
+    handleComponentGeneration,
+  } = useComponentGeneration(projectId);
+
   // Load saved jobs on mount
   useEffect(() => {
     const loadSavedJobs = async () => {
@@ -178,6 +193,9 @@ export const StudioPanel: React.FC<StudioPanelProps> = ({
 
         // Load saved website jobs
         await loadSavedWebsiteJobs();
+
+        // Load saved component jobs
+        await loadSavedComponentJobs();
 
       } catch (error) {
         console.error('Failed to load saved jobs:', error);
@@ -231,6 +249,8 @@ export const StudioPanel: React.FC<StudioPanelProps> = ({
       await handleEmailGeneration(signal);
     } else if (optionId === 'website') {
       await handleWebsiteGeneration(signal);
+    } else if (optionId === 'components') {
+      await handleComponentGeneration(signal);
     } else {
       showSuccess(`${getItemTitle(optionId)} generation is coming soon!`);
     }
@@ -309,6 +329,8 @@ export const StudioPanel: React.FC<StudioPanelProps> = ({
               currentInfographicJob={currentInfographicJob}
               isGeneratingEmail={isGeneratingEmail}
               currentEmailJob={currentEmailJob}
+              isGeneratingComponents={isGeneratingComponents}
+              currentComponentJob={currentComponentJob}
             />
 
             {/* Generated Content List */}
@@ -326,7 +348,7 @@ export const StudioPanel: React.FC<StudioPanelProps> = ({
               savedMindMapJobs={savedMindMapJobs}
               setViewingMindMapJob={setViewingMindMapJob}
               savedWebsiteJobs={savedWebsiteJobs}
-              openWebsite={openWebsite}
+              setViewingWebsiteJob={setViewingWebsiteJob}
               downloadWebsite={downloadWebsite}
               savedQuizJobs={savedQuizJobs}
               setViewingQuizJob={setViewingQuizJob}
@@ -336,6 +358,8 @@ export const StudioPanel: React.FC<StudioPanelProps> = ({
               setViewingInfographicJob={setViewingInfographicJob}
               savedEmailJobs={savedEmailJobs}
               setViewingEmailJob={setViewingEmailJob}
+              savedComponentJobs={savedComponentJobs}
+              setViewingComponentJob={setViewingComponentJob}
             />
           </div>
         </ScrollArea>
@@ -361,6 +385,8 @@ export const StudioPanel: React.FC<StudioPanelProps> = ({
         setViewingFlashCardJob={setViewingFlashCardJob}
         viewingMindMapJob={viewingMindMapJob}
         setViewingMindMapJob={setViewingMindMapJob}
+        viewingWebsiteJob={viewingWebsiteJob}
+        setViewingWebsiteJob={setViewingWebsiteJob}
         viewingQuizJob={viewingQuizJob}
         setViewingQuizJob={setViewingQuizJob}
         viewingSocialPostJob={viewingSocialPostJob}
@@ -369,6 +395,8 @@ export const StudioPanel: React.FC<StudioPanelProps> = ({
         setViewingInfographicJob={setViewingInfographicJob}
         viewingEmailJob={viewingEmailJob}
         setViewingEmailJob={setViewingEmailJob}
+        viewingComponentJob={viewingComponentJob}
+        setViewingComponentJob={setViewingComponentJob}
       />
     </div>
   );
