@@ -15,6 +15,8 @@ Executors:
 - csv_analyzer_agent_executor: Handles CSV analysis agent tool calls (module with execute function)
 - studio_signal_executor: Handles studio_signal tool calls (non-blocking, background task)
 - studio_audio_executor: Handles audio overview tools (read_source_content, write_script_section)
+- email_agent_executor: Handles email template generation (background task)
+- website_agent_executor: Handles website generation (background task)
 """
 from app.services.tool_executors.memory_executor import memory_executor
 from app.services.tool_executors.source_search_executor import source_search_executor
@@ -23,6 +25,8 @@ from app.services.tool_executors.deep_research_executor import deep_research_exe
 from app.services.tool_executors import csv_analyzer_agent_executor  # Module import (has execute function)
 from app.services.tool_executors.studio_signal_executor import studio_signal_executor
 from app.services.tool_executors.studio_audio_executor import studio_audio_executor
+from app.services.tool_executors.email_agent_executor import email_agent_executor
+from app.services.tool_executors.website_agent_executor import website_agent_executor
 
 __all__ = [
     "memory_executor",
@@ -31,5 +35,7 @@ __all__ = [
     "deep_research_executor",
     "csv_analyzer_agent_executor",
     "studio_signal_executor",
-    "studio_audio_executor"
+    "studio_audio_executor",
+    "email_agent_executor",
+    "website_agent_executor"
 ]
