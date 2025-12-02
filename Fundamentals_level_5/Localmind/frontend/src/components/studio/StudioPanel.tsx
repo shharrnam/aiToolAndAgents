@@ -29,10 +29,11 @@ import {
   TooltipTrigger,
 } from '../ui/tooltip';
 import { MagicWand, CaretLeft, CaretRight, Play, Pause, SpinnerGap, DownloadSimple, SpeakerHigh, Image, Cards, ArrowsClockwise, TreeStructure, Exam, ShareNetwork, ChartPieSlice } from '@phosphor-icons/react';
-import { studioAPI, type AudioJob, type AdJob, type FlashCardJob, type MindMapJob, type QuizJob, type SocialPostJob, type InfographicJob, type EmailJob } from '../../lib/api/studio';
+import { studioAPI, type AudioJob, type AdJob, type FlashCardJob, type MindMapJob, type QuizJob, type SocialPostJob, type InfographicJob, type EmailJob, type WebsiteJob } from '../../lib/api/studio';
 import { useToast } from '../ui/toast';
 import { MindMapViewer } from './MindMapViewer';
 import { QuizViewer } from './QuizViewer';
+import { Globe } from '@phosphor-icons/react';  // Icon for websites
 
 interface StudioPanelProps {
   projectId: string;
@@ -105,6 +106,9 @@ export const StudioPanel: React.FC<StudioPanelProps> = ({
   const [isGeneratingEmail, setIsGeneratingEmail] = useState(false);
   const [viewingEmailJob, setViewingEmailJob] = useState<EmailJob | null>(null);
 
+  const [savedWebsiteJobs, setSavedWebsiteJobs] = useState<WebsiteJob[]>([]);
+  const [currentWebsiteJob, setCurrentWebsiteJob] = useState<WebsiteJob | null>(null);
+  const [isGeneratingWebsite, setIsGeneratingWebsite] = useState(false);
   // Load saved jobs on mount
   useEffect(() => {
     const loadSavedJobs = async () => {
@@ -164,6 +168,14 @@ export const StudioPanel: React.FC<StudioPanelProps> = ({
           const completedEmails = emailResponse.jobs.filter((job) => job.status === 'ready');
           setSavedEmailJobs(completedEmails);
         }
+
+          // Load saved website jobs
+        const websiteResponse = await studioAPI.listWebsiteJobs(projectId);
+        if (websiteResponse.success && websiteResponse.jobs) {
+          const completedWebsites = websiteResponse.jobs.filter((job) => job.status === 'ready');
+          setSavedWebsiteJobs(completedWebsites);
+        }
+        
       } catch (error) {
         console.error('Failed to load saved jobs:', error);
       }
@@ -213,6 +225,8 @@ export const StudioPanel: React.FC<StudioPanelProps> = ({
       await handleInfographicGeneration(signal);
     } else if (optionId === 'email_templates') {
       await handleEmailGeneration(signal);
+    } else if (optionId === 'website') {
+      await handleWebsiteGeneration(signal);
     } else {
       showSuccess(`${getItemTitle(optionId)} generation is coming soon!`);
     }
@@ -665,6 +679,53 @@ export const StudioPanel: React.FC<StudioPanelProps> = ({
     }
   };
 
+  const handleWebsiteGeneration = async (signal: StudioSignal) => {
+    setIsGeneratingWebsite(true);
+    setCurrentWebsiteJob(null);
+
+    try {
+      const sourceId = signal.sources[0]?.source_id;
+      if (!sourceId) {
+        showError('No source selected');
+        return;
+      }
+
+      // Start website generation
+      const startResponse = await studioAPI.startWebsiteGeneration(
+        projectId,
+        sourceId,
+        signal.direction
+      );
+
+      if (!startResponse.success || !startResponse.job_id) {
+        showError(startResponse.error || 'Failed to start website generation');
+        return;
+      }
+
+      // Poll for completion
+      const finalJob = await studioAPI.pollWebsiteJobStatus(
+        projectId,
+        startResponse.job_id,
+        (job) => setCurrentWebsiteJob(job)
+      );
+
+      if (finalJob.status === 'ready') {
+        setSavedWebsiteJobs((prev) => [finalJob, ...prev]);
+        // Open website in new window
+        const previewUrl = studioAPI.getWebsitePreviewUrl(projectId, finalJob.id);
+        window.open(`http://localhost:5000${previewUrl}`, '_blank');
+      } else if (finalJob.status === 'error') {
+        showError(finalJob.error_message || 'Website generation failed');
+      }
+    } catch (error) {
+      console.error('Website generation error:', error);
+      showError('Website generation failed');
+    } finally {
+      setIsGeneratingWebsite(false);
+      setCurrentWebsiteJob(null);
+    }
+  };
+
   /**
    * Toggle current card flip
    */
@@ -935,6 +996,22 @@ export const StudioPanel: React.FC<StudioPanelProps> = ({
                 </div>
               </div>
             )}
+            {/* Website Generation Progress */}
+            {isGeneratingWebsite && (
+            <div className="p-2 bg-purple-500/5 rounded-md border border-purple-500/20">
+              <div className="flex items-center gap-2">
+                <SpinnerGap className="animate-spin text-purple-500" size={16} />
+                <div className="flex-1">
+                  <p className="text-xs text-purple-700 font-medium">
+                    {currentWebsiteJob?.site_name || 'Generating website...'}
+                  </p>
+                  <p className="text-xs text-purple-600">
+                    {currentWebsiteJob?.status_message || 'Starting...'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
             {/* Quiz Generation Progress */}
             {isGeneratingQuiz && (
@@ -1117,7 +1194,46 @@ export const StudioPanel: React.FC<StudioPanelProps> = ({
                       </span>
                     </div>
                   ))}
-
+                {/* Saved Website Jobs - filter by source_id from signals */}
+                  {savedWebsiteJobs
+                    .filter((job) =>
+                      signals.some((s) => s.sources.some((src) => src.source_id === job.source_id))
+                    )
+                    .map((job) => (
+                      <div
+                        key={job.id}
+                        onClick={() => {
+                          // Open in new window
+                          const previewUrl = studioAPI.getWebsitePreviewUrl(projectId, job.id);
+                          window.open(`http://localhost:5000${previewUrl}`, '_blank');
+                        }}
+                        className="flex items-start gap-2 p-2 rounded hover:bg-purple-500/10 cursor-pointer transition-colors"
+                      >
+                        <Globe size={12} weight="duotone" className="text-purple-600 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-gray-900 truncate">
+                            {job.site_name || 'Website'}
+                          </p>
+                          <p className="text-[10px] text-gray-500 truncate">
+                            {job.pages_created?.length || 0} pages • {job.features_implemented?.length || 0} features
+                          </p>
+                        </div>
+                        {/* Download button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const downloadUrl = studioAPI.getWebsiteDownloadUrl(projectId, job.id);
+                            const link = document.createElement('a');
+                            link.href = `http://localhost:5000${downloadUrl}`;
+                            link.click();
+                          }}
+                          className="p-1 hover:bg-purple-600/20 rounded transition-colors"
+                          title="Download ZIP"
+                        >
+                          <DownloadSimple size={12} className="text-purple-600" />
+                        </button>
+                      </div>
+                    ))}
                 {/* Saved Quiz Jobs - filter by source_id from signals */}
                 {savedQuizJobs
                   .filter((job) => signals.some((s) =>
