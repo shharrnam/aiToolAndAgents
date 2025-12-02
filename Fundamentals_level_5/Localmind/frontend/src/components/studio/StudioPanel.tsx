@@ -28,8 +28,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '../ui/tooltip';
-import { MagicWand, CaretLeft, CaretRight, Play, Pause, SpinnerGap, DownloadSimple, SpeakerHigh, Image, Cards, ArrowsClockwise, TreeStructure, Exam } from '@phosphor-icons/react';
-import { studioAPI, type AudioJob, type AdJob, type FlashCardJob, type MindMapJob, type QuizJob } from '../../lib/api/studio';
+import { MagicWand, CaretLeft, CaretRight, Play, Pause, SpinnerGap, DownloadSimple, SpeakerHigh, Image, Cards, ArrowsClockwise, TreeStructure, Exam, ShareNetwork, ChartPieSlice } from '@phosphor-icons/react';
+import { studioAPI, type AudioJob, type AdJob, type FlashCardJob, type MindMapJob, type QuizJob, type SocialPostJob, type InfographicJob, type EmailJob } from '../../lib/api/studio';
 import { useToast } from '../ui/toast';
 import { MindMapViewer } from './MindMapViewer';
 import { QuizViewer } from './QuizViewer';
@@ -87,6 +87,24 @@ export const StudioPanel: React.FC<StudioPanelProps> = ({
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
   const [viewingQuizJob, setViewingQuizJob] = useState<QuizJob | null>(null);
 
+  // State for social posts
+  const [savedSocialPostJobs, setSavedSocialPostJobs] = useState<SocialPostJob[]>([]);
+  const [currentSocialPostJob, setCurrentSocialPostJob] = useState<SocialPostJob | null>(null);
+  const [isGeneratingSocialPosts, setIsGeneratingSocialPosts] = useState(false);
+  const [viewingSocialPostJob, setViewingSocialPostJob] = useState<SocialPostJob | null>(null);
+
+  // State for infographics
+  const [savedInfographicJobs, setSavedInfographicJobs] = useState<InfographicJob[]>([]);
+  const [currentInfographicJob, setCurrentInfographicJob] = useState<InfographicJob | null>(null);
+  const [isGeneratingInfographic, setIsGeneratingInfographic] = useState(false);
+  const [viewingInfographicJob, setViewingInfographicJob] = useState<InfographicJob | null>(null);
+
+  // State for email templates
+  const [savedEmailJobs, setSavedEmailJobs] = useState<EmailJob[]>([]);
+  const [currentEmailJob, setCurrentEmailJob] = useState<EmailJob | null>(null);
+  const [isGeneratingEmail, setIsGeneratingEmail] = useState(false);
+  const [viewingEmailJob, setViewingEmailJob] = useState<EmailJob | null>(null);
+
   // Load saved jobs on mount
   useEffect(() => {
     const loadSavedJobs = async () => {
@@ -124,6 +142,27 @@ export const StudioPanel: React.FC<StudioPanelProps> = ({
         if (quizResponse.success && quizResponse.jobs) {
           const completedQuizzes = quizResponse.jobs.filter((job) => job.status === 'ready');
           setSavedQuizJobs(completedQuizzes);
+        }
+
+        // Load social post jobs
+        const socialPostResponse = await studioAPI.listSocialPostJobs(projectId);
+        if (socialPostResponse.success && socialPostResponse.jobs) {
+          const completedSocialPosts = socialPostResponse.jobs.filter((job) => job.status === 'ready');
+          setSavedSocialPostJobs(completedSocialPosts);
+        }
+
+        // Load infographic jobs
+        const infographicResponse = await studioAPI.listInfographicJobs(projectId);
+        if (infographicResponse.success && infographicResponse.jobs) {
+          const completedInfographics = infographicResponse.jobs.filter((job) => job.status === 'ready');
+          setSavedInfographicJobs(completedInfographics);
+        }
+
+        // Load email template jobs
+        const emailResponse = await studioAPI.listEmailJobs(projectId);
+        if (emailResponse.success && emailResponse.jobs) {
+          const completedEmails = emailResponse.jobs.filter((job) => job.status === 'ready');
+          setSavedEmailJobs(completedEmails);
         }
       } catch (error) {
         console.error('Failed to load saved jobs:', error);
@@ -168,6 +207,12 @@ export const StudioPanel: React.FC<StudioPanelProps> = ({
       await handleMindMapGeneration(signal);
     } else if (optionId === 'quiz') {
       await handleQuizGeneration(signal);
+    } else if (optionId === 'social') {
+      await handleSocialPostGeneration(signal);
+    } else if (optionId === 'infographics') {
+      await handleInfographicGeneration(signal);
+    } else if (optionId === 'email_templates') {
+      await handleEmailGeneration(signal);
     } else {
       showSuccess(`${getItemTitle(optionId)} generation is coming soon!`);
     }
@@ -442,6 +487,181 @@ export const StudioPanel: React.FC<StudioPanelProps> = ({
     } finally {
       setIsGeneratingQuiz(false);
       setCurrentQuizJob(null);
+    }
+  };
+
+  /**
+   * Handle social post generation
+   */
+  const handleSocialPostGeneration = async (signal: StudioSignal) => {
+    // Extract topic from direction
+    const topic = signal.direction || 'Topic';
+
+    setIsGeneratingSocialPosts(true);
+    setCurrentSocialPostJob(null);
+
+    try {
+      const geminiStatus = await studioAPI.checkGeminiStatus();
+      if (!geminiStatus.configured) {
+        showError('Gemini API key not configured. Please add it in App Settings.');
+        setIsGeneratingSocialPosts(false);
+        return;
+      }
+
+      const startResponse = await studioAPI.startSocialPostGeneration(
+        projectId,
+        topic,
+        signal.direction
+      );
+
+      if (!startResponse.success || !startResponse.job_id) {
+        showError(startResponse.error || 'Failed to start social post generation.');
+        setIsGeneratingSocialPosts(false);
+        return;
+      }
+
+      showSuccess(`Generating social posts...`);
+
+      const finalJob = await studioAPI.pollSocialPostJobStatus(
+        projectId,
+        startResponse.job_id,
+        (job) => setCurrentSocialPostJob(job)
+      );
+
+      setCurrentSocialPostJob(finalJob);
+
+      if (finalJob.status === 'ready') {
+        showSuccess(`Generated ${finalJob.post_count} social posts!`);
+        setSavedSocialPostJobs((prev) => [finalJob, ...prev]);
+        setViewingSocialPostJob(finalJob); // Open modal to view
+      } else if (finalJob.status === 'error') {
+        showError(finalJob.error || 'Social post generation failed.');
+      }
+    } catch (error) {
+      console.error('Social post generation error:', error);
+      showError(error instanceof Error ? error.message : 'Social post generation failed.');
+    } finally {
+      setIsGeneratingSocialPosts(false);
+      setCurrentSocialPostJob(null);
+    }
+  };
+
+  /**
+   * Handle infographic generation
+   */
+  const handleInfographicGeneration = async (signal: StudioSignal) => {
+    const sourceId = signal.sources[0]?.source_id;
+    if (!sourceId) {
+      showError('No source specified for infographic generation.');
+      return;
+    }
+
+    setIsGeneratingInfographic(true);
+    setCurrentInfographicJob(null);
+
+    try {
+      const geminiStatus = await studioAPI.checkGeminiStatus();
+      if (!geminiStatus.configured) {
+        showError('Gemini API key not configured. Please add it in App Settings.');
+        setIsGeneratingInfographic(false);
+        return;
+      }
+
+      const startResponse = await studioAPI.startInfographicGeneration(
+        projectId,
+        sourceId,
+        signal.direction
+      );
+
+      if (!startResponse.success || !startResponse.job_id) {
+        showError(startResponse.error || 'Failed to start infographic generation.');
+        setIsGeneratingInfographic(false);
+        return;
+      }
+
+      showSuccess(`Generating infographic for ${startResponse.source_name}...`);
+
+      const finalJob = await studioAPI.pollInfographicJobStatus(
+        projectId,
+        startResponse.job_id,
+        (job) => setCurrentInfographicJob(job)
+      );
+
+      setCurrentInfographicJob(finalJob);
+
+      if (finalJob.status === 'ready') {
+        showSuccess(`Generated infographic: ${finalJob.topic_title}!`);
+        setSavedInfographicJobs((prev) => [finalJob, ...prev]);
+        setViewingInfographicJob(finalJob); // Open modal to view
+      } else if (finalJob.status === 'error') {
+        showError(finalJob.error || 'Infographic generation failed.');
+      }
+    } catch (error) {
+      console.error('Infographic generation error:', error);
+      showError(error instanceof Error ? error.message : 'Infographic generation failed.');
+    } finally {
+      setIsGeneratingInfographic(false);
+      setCurrentInfographicJob(null);
+    }
+  };
+
+  /**
+   * Handle email template generation
+   */
+  const handleEmailGeneration = async (signal: StudioSignal) => {
+    const sourceId = signal.sources[0]?.source_id;
+    if (!sourceId) {
+      showError('No source specified for email template generation.');
+      return;
+    }
+
+    setIsGeneratingEmail(true);
+    setCurrentEmailJob(null);
+
+    try {
+      // Check Gemini status (email agent uses Gemini for images)
+      const geminiStatus = await studioAPI.checkGeminiStatus();
+      if (!geminiStatus.configured) {
+        showError('Gemini API key not configured. Please add it in App Settings.');
+        setIsGeneratingEmail(false);
+        return;
+      }
+
+      const startResponse = await studioAPI.startEmailGeneration(
+        projectId,
+        sourceId,
+        signal.direction
+      );
+
+      if (!startResponse.success || !startResponse.job_id) {
+        showError(startResponse.error || 'Failed to start email template generation.');
+        setIsGeneratingEmail(false);
+        return;
+      }
+
+      showSuccess(`Generating email template...`);
+
+      const finalJob = await studioAPI.pollEmailJobStatus(
+        projectId,
+        startResponse.job_id,
+        (job) => setCurrentEmailJob(job)
+      );
+
+      setCurrentEmailJob(finalJob);
+
+      if (finalJob.status === 'ready') {
+        showSuccess(`Generated email template: ${finalJob.template_name}!`);
+        setSavedEmailJobs((prev) => [finalJob, ...prev]);
+        setViewingEmailJob(finalJob); // Open modal to view
+      } else if (finalJob.status === 'error') {
+        showError(finalJob.error_message || 'Email template generation failed.');
+      }
+    } catch (error) {
+      console.error('Email template generation error:', error);
+      showError(error instanceof Error ? error.message : 'Email template generation failed.');
+    } finally {
+      setIsGeneratingEmail(false);
+      setCurrentEmailJob(null);
     }
   };
 
@@ -733,6 +953,57 @@ export const StudioPanel: React.FC<StudioPanelProps> = ({
               </div>
             )}
 
+            {/* Social Post Generation Progress */}
+            {isGeneratingSocialPosts && (
+              <div className="p-2 bg-cyan-500/5 rounded-md border border-cyan-500/20 overflow-hidden">
+                <div className="flex items-center gap-2">
+                  <SpinnerGap size={14} className="animate-spin text-cyan-500 flex-shrink-0" />
+                  <div className="flex-1 min-w-0 overflow-hidden">
+                    <p className="text-xs font-medium truncate">
+                      {currentSocialPostJob?.topic || 'Generating social posts...'}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground truncate">
+                      {currentSocialPostJob?.progress || 'Starting...'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Infographic Generation Progress */}
+            {isGeneratingInfographic && (
+              <div className="p-2 bg-amber-500/5 rounded-md border border-amber-500/20 overflow-hidden">
+                <div className="flex items-center gap-2">
+                  <SpinnerGap size={14} className="animate-spin text-amber-500 flex-shrink-0" />
+                  <div className="flex-1 min-w-0 overflow-hidden">
+                    <p className="text-xs font-medium truncate">
+                      {currentInfographicJob?.source_name || 'Generating infographic...'}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground truncate">
+                      {currentInfographicJob?.progress || 'Starting...'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Email Template Generation Progress */}
+            {isGeneratingEmail && (
+              <div className="p-2 bg-blue-500/5 rounded-md border border-blue-500/20 overflow-hidden">
+                <div className="flex items-center gap-2">
+                  <SpinnerGap size={14} className="animate-spin text-blue-500 flex-shrink-0" />
+                  <div className="flex-1 min-w-0 overflow-hidden">
+                    <p className="text-xs font-medium truncate">
+                      {currentEmailJob?.source_name || 'Generating email template...'}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground truncate">
+                      {currentEmailJob?.status_message || 'Starting...'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Only show generated content when signals are present (chat selected) */}
             {signals.length > 0 ? (
               <>
@@ -867,6 +1138,70 @@ export const StudioPanel: React.FC<StudioPanelProps> = ({
                       <span className="text-[9px] text-muted-foreground flex-shrink-0">
                         {job.question_count}
                       </span>
+                    </div>
+                  ))}
+
+                {/* Saved Social Post Jobs - show if social signal exists */}
+                {signals.some((s) => s.studio_item === 'social') &&
+                  savedSocialPostJobs.map((job) => (
+                    <div
+                      key={job.id}
+                      className="flex items-center gap-2 p-1.5 bg-muted/50 rounded border hover:border-primary/50 transition-colors cursor-pointer"
+                      onClick={() => setViewingSocialPostJob(job)}
+                    >
+                      <div className="p-1 bg-cyan-500/10 rounded flex-shrink-0">
+                        <ShareNetwork size={12} className="text-cyan-600" />
+                      </div>
+                      <div className="flex-1 min-w-0 overflow-hidden">
+                        <p className="text-[10px] font-medium truncate max-w-[120px]">Social Posts</p>
+                      </div>
+                      <span className="text-[9px] text-muted-foreground flex-shrink-0">
+                        {job.post_count}
+                      </span>
+                    </div>
+                  ))}
+
+                {/* Saved Infographic Jobs - filter by source_id from signals */}
+                {savedInfographicJobs
+                  .filter((job) => signals.some((s) =>
+                    s.sources.some((src) => src.source_id === job.source_id)
+                  ))
+                  .map((job) => (
+                    <div
+                      key={job.id}
+                      className="flex items-center gap-2 p-1.5 bg-muted/50 rounded border hover:border-primary/50 transition-colors cursor-pointer"
+                      onClick={() => setViewingInfographicJob(job)}
+                    >
+                      <div className="p-1 bg-amber-500/10 rounded flex-shrink-0">
+                        <ChartPieSlice size={12} className="text-amber-600" />
+                      </div>
+                      <div className="flex-1 min-w-0 overflow-hidden">
+                        <p className="text-[10px] font-medium truncate max-w-[120px]">
+                          {job.topic_title || 'Infographic'}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+
+                {/* Saved Email Template Jobs - filter by source_id from signals */}
+                {savedEmailJobs
+                  .filter((job) => signals.some((s) =>
+                    s.sources.some((src) => src.source_id === job.source_id)
+                  ))
+                  .map((job) => (
+                    <div
+                      key={job.id}
+                      className="flex items-center gap-2 p-1.5 bg-muted/50 rounded border hover:border-primary/50 transition-colors cursor-pointer"
+                      onClick={() => setViewingEmailJob(job)}
+                    >
+                      <div className="p-1 bg-blue-500/10 rounded flex-shrink-0">
+                        <ShareNetwork size={12} className="text-blue-600" />
+                      </div>
+                      <div className="flex-1 min-w-0 overflow-hidden">
+                        <p className="text-[10px] font-medium truncate max-w-[120px]">
+                          {job.template_name || 'Email Template'}
+                        </p>
+                      </div>
                     </div>
                   ))}
               </>
@@ -1167,6 +1502,274 @@ export const StudioPanel: React.FC<StudioPanelProps> = ({
               />
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Social Post Viewer Modal */}
+      <Dialog open={viewingSocialPostJob !== null} onOpenChange={(open) => !open && setViewingSocialPostJob(null)}>
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShareNetwork size={20} className="text-cyan-600" />
+              Social Posts
+            </DialogTitle>
+            {viewingSocialPostJob?.topic_summary && (
+              <DialogDescription>
+                {viewingSocialPostJob.topic_summary}
+              </DialogDescription>
+            )}
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 py-4">
+            {viewingSocialPostJob?.posts.map((post, index) => (
+              <div key={index} className="flex flex-col gap-3 border rounded-lg overflow-hidden bg-card">
+                {/* Platform Badge */}
+                <div className="px-3 py-2 border-b bg-muted/30">
+                  <span className={`text-xs font-medium uppercase tracking-wide ${
+                    post.platform === 'linkedin' ? 'text-blue-600' :
+                    post.platform === 'instagram' ? 'text-pink-600' :
+                    'text-sky-500'
+                  }`}>
+                    {post.platform === 'twitter' ? 'X (Twitter)' : post.platform}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground ml-2">
+                    {post.aspect_ratio}
+                  </span>
+                </div>
+
+                {/* Image */}
+                {post.image_url && (
+                  <div className="relative group">
+                    <img
+                      src={`http://localhost:5000${post.image_url}`}
+                      alt={`${post.platform} post`}
+                      className="w-full h-auto object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="gap-1"
+                        onClick={() => {
+                          if (post.image?.filename) {
+                            const link = document.createElement('a');
+                            link.href = `http://localhost:5000${post.image_url}`;
+                            link.download = post.image.filename;
+                            link.click();
+                          }
+                        }}
+                      >
+                        <DownloadSimple size={14} />
+                        Download
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Copy/Caption */}
+                <div className="px-3 pb-3 flex-1">
+                  <p className="text-sm whitespace-pre-line">{post.copy}</p>
+                  {post.hashtags.length > 0 && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {post.hashtags.join(' ')}
+                    </p>
+                  )}
+                </div>
+
+                {/* Copy to clipboard */}
+                <div className="px-3 pb-3">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full text-xs"
+                    onClick={() => {
+                      const fullText = `${post.copy}\n\n${post.hashtags.join(' ')}`;
+                      navigator.clipboard.writeText(fullText);
+                      showSuccess('Copied to clipboard!');
+                    }}
+                  >
+                    Copy Caption
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Infographic Viewer Modal */}
+      <Dialog open={viewingInfographicJob !== null} onOpenChange={(open) => !open && setViewingInfographicJob(null)}>
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ChartPieSlice size={20} className="text-amber-600" />
+              {viewingInfographicJob?.topic_title || 'Infographic'}
+            </DialogTitle>
+            {viewingInfographicJob?.topic_summary && (
+              <DialogDescription>
+                {viewingInfographicJob.topic_summary}
+              </DialogDescription>
+            )}
+          </DialogHeader>
+
+          {/* Infographic Image */}
+          {viewingInfographicJob?.image_url && (
+            <div className="py-4">
+              <div className="relative group rounded-lg overflow-hidden border bg-muted">
+                <img
+                  src={`http://localhost:5000${viewingInfographicJob.image_url}`}
+                  alt={viewingInfographicJob.topic_title || 'Infographic'}
+                  className="w-full h-auto object-contain"
+                />
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="gap-1"
+                    onClick={() => {
+                      if (viewingInfographicJob?.image?.filename) {
+                        const link = document.createElement('a');
+                        link.href = `http://localhost:5000${viewingInfographicJob.image_url}`;
+                        link.download = viewingInfographicJob.image.filename;
+                        link.click();
+                      }
+                    }}
+                  >
+                    <DownloadSimple size={14} />
+                    Download
+                  </Button>
+                </div>
+              </div>
+
+              {/* Key Sections */}
+              {viewingInfographicJob.key_sections && viewingInfographicJob.key_sections.length > 0 && (
+                <div className="mt-4">
+                  <h4 className="text-sm font-medium mb-2">Key Sections</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {viewingInfographicJob.key_sections.map((section, index) => (
+                      <span
+                        key={index}
+                        className="px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded text-xs"
+                      >
+                        {section.title}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Source info */}
+              <p className="text-xs text-muted-foreground mt-4">
+                Generated from: {viewingInfographicJob.source_name}
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Email Template Modal */}
+      <Dialog open={viewingEmailJob !== null} onOpenChange={(open) => !open && setViewingEmailJob(null)}>
+        <DialogContent className="sm:max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShareNetwork size={20} className="text-blue-600" />
+              {viewingEmailJob?.template_name || 'Email Template'}
+            </DialogTitle>
+            {viewingEmailJob?.subject_line && (
+              <DialogDescription>
+                Subject: {viewingEmailJob.subject_line}
+              </DialogDescription>
+            )}
+          </DialogHeader>
+
+          {/* Email Template Preview */}
+          {viewingEmailJob?.preview_url && (
+            <div className="py-4">
+              {/* Preview iframe */}
+              <div className="relative rounded-lg overflow-hidden border bg-gray-50 dark:bg-gray-900 mb-4">
+                <iframe
+                  src={`http://localhost:5000${viewingEmailJob.preview_url}`}
+                  className="w-full h-[600px]"
+                  title="Email template preview"
+                  sandbox="allow-same-origin"
+                />
+              </div>
+
+              {/* Template Info */}
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-1">Template Type</p>
+                  <p className="text-sm capitalize">{viewingEmailJob.template_type || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-1">Images</p>
+                  <p className="text-sm">{viewingEmailJob.images?.length || 0} image{viewingEmailJob.images?.length !== 1 ? 's' : ''}</p>
+                </div>
+              </div>
+
+              {/* Color Scheme */}
+              {viewingEmailJob.color_scheme && (
+                <div className="mb-4">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Color Scheme</p>
+                  <div className="flex gap-2">
+                    {Object.entries(viewingEmailJob.color_scheme).map(([name, color]) => (
+                      <TooltipProvider key={name}>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <div
+                              className="w-8 h-8 rounded border border-gray-300 dark:border-gray-700"
+                              style={{ backgroundColor: color }}
+                            />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-xs capitalize">{name}: {color}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Download Buttons */}
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="default"
+                  className="gap-1 flex-1"
+                  onClick={() => {
+                    const downloadUrl = studioAPI.getEmailDownloadUrl(projectId, viewingEmailJob.id);
+                    const link = document.createElement('a');
+                    link.href = `http://localhost:5000${downloadUrl}`;
+                    link.click();
+                  }}
+                >
+                  <DownloadSimple size={14} />
+                  Download All (ZIP)
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1"
+                  onClick={() => {
+                    if (viewingEmailJob.html_url) {
+                      const link = document.createElement('a');
+                      link.href = `http://localhost:5000${viewingEmailJob.html_url}`;
+                      link.download = viewingEmailJob.html_file || 'email_template.html';
+                      link.click();
+                    }
+                  }}
+                >
+                  Download HTML
+                </Button>
+              </div>
+
+              {/* Source info */}
+              <p className="text-xs text-muted-foreground mt-4">
+                Generated from: {viewingEmailJob.source_name}
+              </p>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

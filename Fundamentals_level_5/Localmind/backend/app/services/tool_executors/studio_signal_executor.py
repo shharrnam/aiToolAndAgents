@@ -62,8 +62,8 @@ class StudioSignalExecutor:
         valid_signals = []
         valid_items = {
             "quiz", "flash_cards", "audio_overview", "mind_map",
-            "business_report", "marketing_strategy", "prd",
-            "blog", "social", "website", "ads_creative"
+            "business_report", "marketing_strategy", "prd", "infographics",
+            "blog", "social", "website", "email_templates", "components", "ads_creative"
         }
 
         for signal in signals:
