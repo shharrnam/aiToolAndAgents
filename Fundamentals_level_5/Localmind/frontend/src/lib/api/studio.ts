@@ -333,6 +333,245 @@ export interface ListQuizJobsResponse {
   error?: string;
 }
 
+/**
+ * Social post image info
+ */
+export interface SocialPostImage {
+  filename: string;
+  path: string;
+  index: number;
+}
+
+/**
+ * Single social post for one platform
+ */
+export interface SocialPost {
+  platform: 'linkedin' | 'instagram' | 'twitter';
+  copy: string;
+  hashtags: string[];
+  aspect_ratio: string;
+  image_prompt: string;
+  image: SocialPostImage | null;
+  image_url: string | null;
+}
+
+/**
+ * Social post job record from the API
+ */
+export interface SocialPostJob {
+  id: string;
+  topic: string;
+  direction: string;
+  status: JobStatus;
+  progress: string;
+  error: string | null;
+  posts: SocialPost[];
+  topic_summary: string | null;
+  post_count: number;
+  generation_time_seconds: number | null;
+  created_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+}
+
+/**
+ * Response from starting social post generation
+ */
+export interface StartSocialPostsResponse {
+  success: boolean;
+  job_id?: string;
+  message?: string;
+  topic?: string;
+  error?: string;
+}
+
+/**
+ * Response from getting social post job status
+ */
+export interface SocialPostJobStatusResponse {
+  success: boolean;
+  job?: SocialPostJob;
+  error?: string;
+}
+
+/**
+ * Response from listing social post jobs
+ */
+export interface ListSocialPostJobsResponse {
+  success: boolean;
+  jobs: SocialPostJob[];
+  count: number;
+  error?: string;
+}
+
+/**
+ * Infographic image info
+ */
+export interface InfographicImage {
+  filename: string;
+  path: string;
+  index: number;
+}
+
+/**
+ * Infographic key section (for display)
+ */
+export interface InfographicKeySection {
+  title: string;
+  icon_description: string;
+}
+
+/**
+ * Infographic job record from the API
+ */
+export interface InfographicJob {
+  id: string;
+  source_id: string;
+  source_name: string;
+  direction: string;
+  status: JobStatus;
+  progress: string;
+  error: string | null;
+  topic_title: string | null;
+  topic_summary: string | null;
+  key_sections: InfographicKeySection[];
+  image: InfographicImage | null;
+  image_url: string | null;
+  image_prompt: string | null;
+  generation_time_seconds: number | null;
+  created_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+}
+
+/**
+ * Response from starting infographic generation
+ */
+export interface StartInfographicResponse {
+  success: boolean;
+  job_id?: string;
+  message?: string;
+  source_name?: string;
+  error?: string;
+}
+
+/**
+ * Response from getting infographic job status
+ */
+export interface InfographicJobStatusResponse {
+  success: boolean;
+  job?: InfographicJob;
+  error?: string;
+}
+
+/**
+ * Response from listing infographic jobs
+ */
+export interface ListInfographicJobsResponse {
+  success: boolean;
+  jobs: InfographicJob[];
+  count: number;
+  error?: string;
+}
+
+// =============================================================================
+// Email Template Types
+// =============================================================================
+
+/**
+ * Email template section plan
+ */
+export interface EmailSection {
+  section_type: 'header' | 'hero' | 'content' | 'product_grid' | 'cta' | 'testimonial' | 'footer';
+  section_name: string;
+  content_description: string;
+  needs_image: boolean;
+  image_description?: string;
+}
+
+/**
+ * Email template color scheme
+ */
+export interface EmailColorScheme {
+  primary: string;
+  secondary: string;
+  background: string;
+  text: string;
+  button: string;
+}
+
+/**
+ * Generated email image info
+ */
+export interface EmailImage {
+  section_name: string;
+  filename: string;
+  placeholder: string;
+  url: string;
+}
+
+/**
+ * Email template generation job
+ */
+export interface EmailJob {
+  id: string;
+  source_id: string;
+  source_name: string;
+  direction: string;
+  status: JobStatus;
+  status_message: string;
+  error_message: string | null;
+  // Template plan
+  template_name: string | null;
+  template_type: 'newsletter' | 'promotional' | 'transactional' | 'announcement' | null;
+  color_scheme: EmailColorScheme | null;
+  sections: EmailSection[];
+  layout_notes: string | null;
+  // Generated content
+  images: EmailImage[];
+  html_file: string | null;
+  html_url: string | null;
+  preview_url: string | null;
+  subject_line: string | null;
+  preheader_text: string | null;
+  // Metadata
+  iterations: number | null;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  created_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+}
+
+/**
+ * Response from starting email template generation
+ */
+export interface StartEmailResponse {
+  success: boolean;
+  job_id?: string;
+  status?: string;
+  message?: string;
+  error?: string;
+}
+
+/**
+ * Response from getting email job status
+ */
+export interface EmailJobStatusResponse {
+  success: boolean;
+  job?: EmailJob;
+  error?: string;
+}
+
+/**
+ * Response from listing email jobs
+ */
+export interface ListEmailJobsResponse {
+  success: boolean;
+  jobs: EmailJob[];
+  error?: string;
+}
+
 class StudioAPI {
   /**
    * Start audio overview generation
@@ -929,6 +1168,370 @@ class StudioAPI {
     }
 
     throw new Error('Quiz generation timed out');
+  }
+
+  // ===========================================================================
+  // Social Post Methods
+  // ===========================================================================
+
+  /**
+   * Start social post generation
+   */
+  async startSocialPostGeneration(
+    projectId: string,
+    topic: string,
+    direction?: string
+  ): Promise<StartSocialPostsResponse> {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/projects/${projectId}/studio/social-posts`,
+        {
+          topic: topic,
+          direction: direction || 'Create engaging social media posts for this topic.',
+        }
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        return error.response.data;
+      }
+      console.error('Error starting social post generation:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get the status of a social post job
+   */
+  async getSocialPostJobStatus(projectId: string, jobId: string): Promise<SocialPostJobStatusResponse> {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/projects/${projectId}/studio/social-post-jobs/${jobId}`
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        return error.response.data;
+      }
+      console.error('Error getting social post job status:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * List all social post jobs for a project
+   */
+  async listSocialPostJobs(projectId: string): Promise<ListSocialPostJobsResponse> {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/projects/${projectId}/studio/social-post-jobs`
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        return error.response.data;
+      }
+      console.error('Error listing social post jobs:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get the full URL for a social post image
+   */
+  getSocialImageUrl(projectId: string, filename: string): string {
+    return `${API_BASE_URL}/projects/${projectId}/studio/social/${filename}`;
+  }
+
+  /**
+   * Poll social post job status until complete or error
+   */
+  async pollSocialPostJobStatus(
+    projectId: string,
+    jobId: string,
+    onProgress?: (job: SocialPostJob) => void,
+    intervalMs: number = 2000,
+    maxAttempts: number = 120
+  ): Promise<SocialPostJob> {
+    let attempts = 0;
+    let currentInterval = intervalMs;
+
+    while (attempts < maxAttempts) {
+      const response = await this.getSocialPostJobStatus(projectId, jobId);
+
+      if (!response.success || !response.job) {
+        throw new Error(response.error || 'Failed to get job status');
+      }
+
+      const job = response.job;
+
+      if (onProgress) {
+        onProgress(job);
+      }
+
+      if (job.status === 'ready' || job.status === 'error') {
+        return job;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, currentInterval));
+
+      attempts++;
+
+      if (attempts > 5 && currentInterval < 5000) {
+        currentInterval = Math.min(currentInterval * 1.2, 5000);
+      }
+    }
+
+    throw new Error('Social post generation timed out');
+  }
+
+  // ===========================================================================
+  // Infographic Methods
+  // ===========================================================================
+
+  /**
+   * Start infographic generation
+   */
+  async startInfographicGeneration(
+    projectId: string,
+    sourceId: string,
+    direction?: string
+  ): Promise<StartInfographicResponse> {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/projects/${projectId}/studio/infographic`,
+        {
+          source_id: sourceId,
+          direction: direction || 'Create an informative infographic summarizing the key concepts.',
+        }
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        return error.response.data;
+      }
+      console.error('Error starting infographic generation:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get the status of an infographic job
+   */
+  async getInfographicJobStatus(projectId: string, jobId: string): Promise<InfographicJobStatusResponse> {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/projects/${projectId}/studio/infographic-jobs/${jobId}`
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        return error.response.data;
+      }
+      console.error('Error getting infographic job status:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * List all infographic jobs for a project
+   */
+  async listInfographicJobs(projectId: string, sourceId?: string): Promise<ListInfographicJobsResponse> {
+    try {
+      const params = sourceId ? { source_id: sourceId } : {};
+      const response = await axios.get(
+        `${API_BASE_URL}/projects/${projectId}/studio/infographic-jobs`,
+        { params }
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        return error.response.data;
+      }
+      console.error('Error listing infographic jobs:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get the full URL for an infographic image
+   */
+  getInfographicUrl(projectId: string, filename: string): string {
+    return `${API_BASE_URL}/projects/${projectId}/studio/infographics/${filename}`;
+  }
+
+  /**
+   * Poll infographic job status until complete or error
+   */
+  async pollInfographicJobStatus(
+    projectId: string,
+    jobId: string,
+    onProgress?: (job: InfographicJob) => void,
+    intervalMs: number = 2000,
+    maxAttempts: number = 120
+  ): Promise<InfographicJob> {
+    let attempts = 0;
+    let currentInterval = intervalMs;
+
+    while (attempts < maxAttempts) {
+      const response = await this.getInfographicJobStatus(projectId, jobId);
+
+      if (!response.success || !response.job) {
+        throw new Error(response.error || 'Failed to get job status');
+      }
+
+      const job = response.job;
+
+      if (onProgress) {
+        onProgress(job);
+      }
+
+      if (job.status === 'ready' || job.status === 'error') {
+        return job;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, currentInterval));
+
+      attempts++;
+
+      if (attempts > 5 && currentInterval < 5000) {
+        currentInterval = Math.min(currentInterval * 1.2, 5000);
+      }
+    }
+
+    throw new Error('Infographic generation timed out');
+  }
+
+  // ===========================================================================
+  // Email Template Methods
+  // ===========================================================================
+
+  /**
+   * Start email template generation via email agent
+   */
+  async startEmailGeneration(
+    projectId: string,
+    sourceId: string,
+    direction?: string
+  ): Promise<StartEmailResponse> {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/projects/${projectId}/studio/email-template`,
+        {
+          source_id: sourceId,
+          direction: direction || '',
+        }
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        return error.response.data;
+      }
+      console.error('Error starting email template generation:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get the status of an email template job
+   */
+  async getEmailJobStatus(projectId: string, jobId: string): Promise<EmailJobStatusResponse> {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/projects/${projectId}/studio/email-jobs/${jobId}`
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        return error.response.data;
+      }
+      console.error('Error getting email job status:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * List all email template jobs for a project
+   */
+  async listEmailJobs(projectId: string, sourceId?: string): Promise<ListEmailJobsResponse> {
+    try {
+      const params = sourceId ? { source_id: sourceId } : {};
+      const response = await axios.get(
+        `${API_BASE_URL}/projects/${projectId}/studio/email-jobs`,
+        { params }
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        return error.response.data;
+      }
+      console.error('Error listing email jobs:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get the full URL for an email template file (HTML or image)
+   */
+  getEmailTemplateFileUrl(projectId: string, filename: string): string {
+    return `${API_BASE_URL}/projects/${projectId}/studio/email-templates/${filename}`;
+  }
+
+  /**
+   * Get the preview URL for an email template
+   */
+  getEmailPreviewUrl(projectId: string, jobId: string): string {
+    return `${API_BASE_URL}/projects/${projectId}/studio/email-templates/${jobId}/preview`;
+  }
+
+  /**
+   * Get the download URL for an email template (ZIP)
+   */
+  getEmailDownloadUrl(projectId: string, jobId: string): string {
+    return `${API_BASE_URL}/projects/${projectId}/studio/email-templates/${jobId}/download`;
+  }
+
+  /**
+   * Poll email job status until complete or error
+   */
+  async pollEmailJobStatus(
+    projectId: string,
+    jobId: string,
+    onProgress?: (job: EmailJob) => void,
+    intervalMs: number = 2000,
+    maxAttempts: number = 150  // Email generation can take longer (agentic)
+  ): Promise<EmailJob> {
+    let attempts = 0;
+    let currentInterval = intervalMs;
+
+    while (attempts < maxAttempts) {
+      const response = await this.getEmailJobStatus(projectId, jobId);
+
+      if (!response.success || !response.job) {
+        throw new Error(response.error || 'Failed to get job status');
+      }
+
+      const job = response.job;
+
+      if (onProgress) {
+        onProgress(job);
+      }
+
+      if (job.status === 'ready' || job.status === 'error') {
+        return job;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, currentInterval));
+
+      attempts++;
+
+      // Gradually increase interval for long-running jobs
+      if (attempts > 5 && currentInterval < 5000) {
+        currentInterval = Math.min(currentInterval * 1.2, 5000);
+      }
+    }
+
+    throw new Error('Email template generation timed out');
   }
 }
 
