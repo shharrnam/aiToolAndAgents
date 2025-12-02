@@ -16,6 +16,7 @@ export const useWebsiteGeneration = (projectId: string) => {
   const [savedWebsiteJobs, setSavedWebsiteJobs] = useState<WebsiteJob[]>([]);
   const [currentWebsiteJob, setCurrentWebsiteJob] = useState<WebsiteJob | null>(null);
   const [isGeneratingWebsite, setIsGeneratingWebsite] = useState(false);
+  const [viewingWebsiteJob, setViewingWebsiteJob] = useState<WebsiteJob | null>(null);
 
   /**
    * Load saved website jobs from backend
@@ -68,9 +69,8 @@ export const useWebsiteGeneration = (projectId: string) => {
 
       if (finalJob.status === 'ready') {
         setSavedWebsiteJobs((prev) => [finalJob, ...prev]);
-        // Open website in new window automatically
-        const previewUrl = studioAPI.getWebsitePreviewUrl(projectId, finalJob.id);
-        window.open(`http://localhost:5000${previewUrl}`, '_blank');
+        // Open website in modal viewer automatically
+        setViewingWebsiteJob(finalJob);
         showSuccess('Website generated successfully!');
       } else if (finalJob.status === 'error') {
         showError(finalJob.error_message || 'Website generation failed');
@@ -85,11 +85,13 @@ export const useWebsiteGeneration = (projectId: string) => {
   };
 
   /**
-   * Open website in new window
+   * Open website in modal viewer
    */
   const openWebsite = (jobId: string) => {
-    const previewUrl = studioAPI.getWebsitePreviewUrl(projectId, jobId);
-    window.open(`http://localhost:5000${previewUrl}`, '_blank');
+    const job = savedWebsiteJobs.find((j) => j.id === jobId);
+    if (job) {
+      setViewingWebsiteJob(job);
+    }
   };
 
   /**
@@ -106,6 +108,8 @@ export const useWebsiteGeneration = (projectId: string) => {
     savedWebsiteJobs,
     currentWebsiteJob,
     isGeneratingWebsite,
+    viewingWebsiteJob,
+    setViewingWebsiteJob,
     loadSavedJobs,
     handleWebsiteGeneration,
     openWebsite,

@@ -5,3 +5,4 @@
 export { useWebsiteGeneration } from './useWebsiteGeneration';
 export { WebsiteProgressIndicator } from './WebsiteProgressIndicator';
 export { WebsiteListItem } from './WebsiteListItem';
+export { WebsiteViewerModal } from './WebsiteViewerModal';
