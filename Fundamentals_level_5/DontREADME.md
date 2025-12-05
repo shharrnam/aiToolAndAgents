@@ -6,7 +6,7 @@ An educational NotebookLM clone built to teach AI/LLM integration patterns.
 
 ## What is NoobBook?
 
-LocalMind is a learning project that demonstrates real-world AI/LLM use cases. Every service and file demonstrates an AI concept - not generic web development patterns.
+NoobBook is a learning project that demonstrates real-world AI/LLM use cases. Every service and file demonstrates an AI concept - not generic web development patterns.
 
 **What you'll learn:**
 - LLM API integration (Claude, OpenAI, Gemini)
@@ -22,7 +22,7 @@ LocalMind is a learning project that demonstrates real-world AI/LLM use cases. E
 
 ## How It Works
 
-LocalMind has 4 main concepts:
+NoobBook has 4 main concepts:
 
 ### 1. Projects
 
@@ -42,6 +42,7 @@ Upload documents and the system processes them for AI understanding:
 | YouTube | Transcript API |
 | URLs | Web agent fetches and extracts content |
 | Text | Direct input |
+| Google Drive | Import anything, automatically processed as per data type |
 
 **Processing Pipeline:**
 ```
